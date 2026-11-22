@@ -1,0 +1,39 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+**/.venv/
+**/venv/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# IDE and OS files
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Project-generated files and large local assets
+cctv-trace/data/clips/*
+!cctv-trace/data/clips/.gitkeep
+cctv-trace/models/*
+!cctv-trace/models/.gitkeep
+cctv-trace/app/report/output/
+
