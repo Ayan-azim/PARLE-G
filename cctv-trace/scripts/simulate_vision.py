@@ -22,7 +22,6 @@ import numpy as np  # noqa: E402
 
 from matching.analyse import analyse  # noqa: E402
 from matching.attributes import PALETTE  # noqa: E402
-from matching.fusion import expected_class  # noqa: E402
 from matching.registry import load_registry  # noqa: E402
 from schema import (CharReading, FrameReading, Settings, UserHints, VisionOutput,  # noqa: E402
                     save_result)
@@ -91,9 +90,9 @@ def noisy_reading(truth: str, kind: str, cfg: dict, rng: random.Random):
                 if c in CONFUSABLE_SWAP and rng.random() < 0.7:
                     chars[i] = CONFUSABLE_SWAP[c]
                 else:
-                    cls = expected_class(i, len(truth))
-                    chars[i] = rng.choice(LETTERS) if cls == "L" else rng.choice("0123456789")
-    confs = [round(rng.uniform(lo, hi), 3) for _ in chars]
+                    chars[i] = rng.choice(LETTERS) if c.isalpha() else rng.choice("0123456789")
+    word_conf = round(rng.uniform(lo, hi), 3)
+    confs = [word_conf] * len(chars)          # word-level confidence, like A's real output
     if kind == "drop":
         j = rng.randrange(len(chars))
         del chars[j], confs[j]
@@ -118,6 +117,8 @@ def build_vision(scenario: str, cfg: dict, registry, rng: random.Random, nrng: n
                             raw_text="", chars=[]))
             continue
         chars, confs = noisy_reading(truth, kind, cfg, rng)
+        if rng.random() < 0.3:                    # junk from the 'IND' strip
+            chars, confs = list('IND') + chars, [confs[0]] * 3 + confs
         sharp = rng.uniform(40, 90) if kind == "blur" else rng.uniform(120, 220)
         raw.append(dict(frame_idx=idx, timestamp_s=round(idx / 30, 3), sharpness=round(sharp, 1), used=True,
                         vehicle_box=box, plate_box=(box[0] + 90, box[3] - 60, box[0] + 190, box[3] - 30),

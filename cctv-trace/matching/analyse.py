@@ -28,6 +28,8 @@ def _apply_plate_hint(registry: List[RegistryEntry], hint: str | None, warnings:
 def analyse(vision: VisionOutput, registry_csv: str, settings: Settings, hints: UserHints, run_dir: str) -> AnalysisResult:
     t0 = time.perf_counter()
     warnings: List[str] = list(vision.notes)
+    if vision.track_id == -1 or not vision.frames:
+        warnings.append("No vehicle was detected in this clip.")
     registry = load_registry(registry_csv)
     if not registry:
         warnings.append("Registry is empty.")

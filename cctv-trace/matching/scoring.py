@@ -5,9 +5,9 @@ from typing import List, Tuple
 
 from schema import (Attributes, Candidate, CharMatch, FusedPlate, RuleCheck, ScoreBreakdown,
                     Settings, Verdict)
+from matching.align import CONFUSABLE, align
 from matching.registry import RegistryEntry
 
-CONFUSABLE = {frozenset(p) for p in ("0O", "1I", "8B", "5S", "2Z")}
 CONFUSABLE_CREDIT = 0.6
 NEAR_COLOURS = {"white", "silver", "grey"}
 CAR_LIKE = {"hatchback", "sedan", "suv", "car", "muv"}
@@ -32,15 +32,21 @@ def type_score(observed: str, registry: str) -> float:
     return 0.5 if (o in CAR_LIKE and r in CAR_LIKE) else 0.0
 
 
-def compare_plate(fused: FusedPlate, plate: str) -> Tuple[float, List[CharMatch]]:
-    """plate_score = sum(sign*conf)/sum(conf) over KNOWN positions, floored at 0.
-    sign: +1 match, +0.6 confusable, -1 mismatch. Unknown positions are ignored.
-    Different length from the registry plate -> score 0 (we do not guess an alignment)."""
+def compare_plate(fused: FusedPlate, plate: str) -> Tuple[float, List[CharMatch], int]:
+    """Align the fused pattern ('?' = unknown) to the registry plate, then score KNOWN columns:
+    plate_score = sum(sign*conf)/sum(conf), floored at 0. sign: +1 match, +0.6 confusable,
+    -1 mismatch (a known char with no registry counterpart also counts as a mismatch).
+    Unknown columns are ignored. Returns (score, matches, registry_chars_without_counterpart)."""
+    _, pairs = align(fused.pattern, plate)
     matches: List[CharMatch] = []
     num = den = 0.0
-    for fc in fused.chars:
-        p = fc.position
-        reg = plate[p] if p < len(plate) else ""
+    orphans = 0
+    for i, j in pairs:
+        if i is None:
+            orphans += 1
+            continue
+        fc = fused.chars[i]
+        reg = plate[j] if j is not None else ""
         if fc.status == "unknown":
             status = "unknown"
         elif not reg:
@@ -51,30 +57,29 @@ def compare_plate(fused: FusedPlate, plate: str) -> Tuple[float, List[CharMatch]
             status = "confusable"
         else:
             status = "mismatch"
-        matches.append(CharMatch(position=p, observed=fc.char, registry=reg or "-", status=status))
+        matches.append(CharMatch(position=fc.position, observed=fc.char, registry=reg or "-", status=status))
         if status != "unknown":
             sign = {"match": 1.0, "confusable": CONFUSABLE_CREDIT, "mismatch": -1.0}[status]
             num += sign * fc.confidence
             den += fc.confidence
-    if len(plate) != fused.length or den == 0:
-        return 0.0, matches
-    return max(0.0, min(1.0, num / den)), matches
+    if den == 0:
+        return 0.0, matches, orphans
+    return max(0.0, min(1.0, num / den)), matches, orphans
 
 
-def _reasons(fused, matches, plate, cs, ts, obs_colour, obs_type, entry) -> List[str]:
+def _reasons(fused, matches, orphans, cs, ts, obs_colour, obs_type, entry) -> List[str]:
     known = [m for m in matches if m.status != "unknown"]
     exact = sum(m.status == "match" for m in known)
     conf = [m for m in known if m.status == "confusable"]
     bad = [m for m in known if m.status == "mismatch"]
     out = []
-    if len(plate) != fused.length:
-        out.append(f"Plate length differs ({len(plate)} in registry vs {fused.length} read)")
-    else:
-        out.append(f"{exact + len(conf)} of {len(known)} known characters match")
-        for m in conf:
-            out.append(f"Confusable pair at position {m.position + 1}: read {m.observed}, registry {m.registry}")
-        if bad:
-            out.append("Mismatch at position " + ", ".join(str(m.position + 1) for m in bad))
+    out.append(f"{exact + len(conf)} of {len(known)} known characters match")
+    for m in conf:
+        out.append(f"Confusable pair at position {m.position + 1}: read {m.observed}, registry {m.registry}")
+    if bad:
+        out.append("Mismatch at position " + ", ".join(str(m.position + 1) for m in bad))
+    if orphans:
+        out.append(f"{orphans} registry character(s) had no counterpart in the reading")
     unk = len(matches) - len(known)
     if unk:
         out.append(f"{unk} unreadable position(s) ignored, neither helping nor hurting")
@@ -97,11 +102,11 @@ def match(fused: FusedPlate, attributes: Attributes, registry: List[RegistryEntr
           settings: Settings) -> Tuple[Verdict, List[Candidate], List[Candidate]]:
     scored = []
     for e in registry:
-        ps, cm = compare_plate(fused, e.plate)
+        ps, cm, orph = compare_plate(fused, e.plate)
         cs = colour_score(attributes.colour.value, e.colour)
         ts = type_score(attributes.body_type.value, e.type)
         final = settings.weight_plate * ps + settings.weight_colour * cs + settings.weight_type * ts
-        scored.append((min(1.0, max(0.0, final)), ps, cs, ts, cm, e))
+        scored.append((min(1.0, max(0.0, final)), ps, cs, ts, cm, e, orph))
     scored.sort(key=lambda t: (-t[0], -t[1], t[5].plate))
     ranked = scored[: settings.top_k]
 
@@ -109,7 +114,7 @@ def match(fused: FusedPlate, attributes: Attributes, registry: List[RegistryEntr
     ev, margins, gap = _confidences(finals, fused.known_count, fused.length)
 
     cands: List[Candidate] = []
-    for i, (final, ps, cs, ts, cm, e) in enumerate(ranked):
+    for i, (final, ps, cs, ts, cm, e, orph) in enumerate(ranked):
         mf = margins[i]
         cands.append(Candidate(
             rank=i + 1, plate=e.plate, make=e.make or None, model=e.model or None,
@@ -118,7 +123,7 @@ def match(fused: FusedPlate, attributes: Attributes, registry: List[RegistryEntr
             breakdown=ScoreBreakdown(plate_score=ps, colour_score=cs, type_score=ts, final_score=final,
                                      evidence_factor=ev, margin_factor=mf),
             char_matches=cm,
-            reasons=_reasons(fused, cm, e.plate, cs, ts, attributes.colour.value, attributes.body_type.value, e),
+            reasons=_reasons(fused, cm, orph, cs, ts, attributes.colour.value, attributes.body_type.value, e),
         ))
 
     best = finals[0] if finals else 0.0

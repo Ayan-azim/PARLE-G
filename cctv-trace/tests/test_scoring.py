@@ -9,9 +9,9 @@ def fused(text, conf=0.9):
 
 def test_confusable_beats_mismatch_but_not_exact():
     f = fused("CG04AB1234")
-    exact, _ = compare_plate(f, "CG04AB1234")
-    conf, cm = compare_plate(f, "CG04A81234")     # B <-> 8
-    bad, _ = compare_plate(f, "CG04AC1234")
+    exact, _, _ = compare_plate(f, "CG04AB1234")
+    conf, cm, _ = compare_plate(f, "CG04A81234")     # B <-> 8
+    bad, _, _ = compare_plate(f, "CG04AC1234")
     assert exact > conf > bad
     assert cm[5].status == "confusable"
 
@@ -35,3 +35,8 @@ def test_near_duplicates_give_low_margin():
     assert f.pattern == "CG04AB12?4"
     assert v.status == "no_confident_match"
     assert any(c.name == "margin over runner-up" and not c.passed for c in v.rule_checks)
+
+
+def test_different_length_registry_plate_still_scores():
+    ps, cm, _ = compare_plate(fused("CG04AB1234"), "CG04AB123")
+    assert 0.0 < ps < 1.0
