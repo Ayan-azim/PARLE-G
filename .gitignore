@@ -13,6 +13,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 *.egg-info/
 dist/
 build/
@@ -31,9 +33,11 @@ build/
 Thumbs.db
 
 # Project-generated files and large local assets
+**/runs/
 cctv-trace/data/clips/*
 !cctv-trace/data/clips/.gitkeep
 cctv-trace/models/*
 !cctv-trace/models/.gitkeep
 cctv-trace/app/report/output/
+*.log
 
