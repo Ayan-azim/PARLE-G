@@ -3,6 +3,8 @@ pandas
 numpy
 pillow
 opencv-python-headless
+easyocr
+ultralytics
 plotly
 jinja2
 pydantic>=2

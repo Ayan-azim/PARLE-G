@@ -38,6 +38,12 @@ cctv-trace/data/clips/*
 !cctv-trace/data/clips/.gitkeep
 cctv-trace/models/*
 !cctv-trace/models/.gitkeep
+cctv-trace/models/easyocr/
+*.pt
+*.pth
+*.onnx
+*.weights
+*.ckpt
 cctv-trace/app/report/output/
 *.log
 

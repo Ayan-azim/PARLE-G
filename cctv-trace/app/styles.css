@@ -35,7 +35,8 @@ h1, h2, h3, .tv-brand, .tv-step { font-family: "Plus Jakarta Sans", Inter, syste
 div[role="dialog"] { background: var(--card) !important; }
 div[role="dialog"] :is(p, h1, h2, h3, span, label) { color: var(--text); }
 .tv-hero { position: relative; overflow: hidden; display: flex; align-items: center; gap: 18px; padding: 22px 28px; margin-bottom: 16px; border-radius: 18px; color: #fff;
-  background: radial-gradient(800px 260px at 90% -30%, rgba(34,211,238,.30), transparent 60%), linear-gradient(135deg, #0b1130, #1e1b4b 62%, #312e81);
+  background: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 34px 34px, linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 34px 34px,
+    radial-gradient(800px 260px at 90% -30%, rgba(34,211,238,.26), transparent 60%), linear-gradient(135deg, #0b1130, #1e1b4b 62%, #312e81);
   box-shadow: 0 14px 34px rgba(30,27,75,.35); animation: tv-rise .5s ease both; }
 .tv-hero .tv-brand { color: #fff; font-size: 1.8rem; font-weight: 800; letter-spacing: .07em; }
 .tv-hero .tv-brand span { background: linear-gradient(90deg, #67e8f9, #a5b4fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -80,96 +81,29 @@ div[role="dialog"] :is(p, h1, h2, h3, span, label) { color: var(--text); }
 .tv-viewer { overflow: auto; max-height: 62vh; border: 1px solid var(--line); border-radius: 10px; background: var(--grey-bg); text-align: center; }
 .tv-viewer img { image-rendering: pixelated; max-width: none; }
 .tv-swatch { display: inline-block; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--grey-bd); vertical-align: middle; margin-right: 8px; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 
-/* Final polish: consistent light/dark contrast and compact dashboard rhythm. */
-.tv-intro { color:var(--muted); font-size:.91rem; margin:-5px 2px 15px; line-height:1.55; }
-.tv-stat { position:relative; min-height:112px; padding:16px 17px 14px; overflow:hidden; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:15px; box-shadow:0 3px 12px var(--shadow); transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
-.tv-stat:before { content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--stat-accent); }
-.tv-stat:hover { transform:translateY(-3px); border-color:var(--stat-accent); box-shadow:0 10px 24px var(--shadow); }
-.tv-stat-label { color:var(--muted); font-size:.72rem; font-weight:700; letter-spacing:.065em; line-height:1.35; }
-.tv-stat-value { color:var(--text); font-family:"Plus Jakarta Sans",Inter,sans-serif; font-size:2rem; font-weight:800; line-height:1.25; margin:5px 0 2px; }
-.tv-stat-note { color:var(--muted); font-size:.74rem; }
-/* Streamlit/BaseWeb controls use nested elements; force readable text in both themes. */
-.stApp [data-baseweb="input"] input, .stApp [data-baseweb="textarea"] textarea, .stApp [data-baseweb="select"] *, .stApp [data-baseweb="select"] input { color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; }
-.stApp [data-baseweb="select"] > div { background:var(--field) !important; border-color:var(--line) !important; }
-.stApp [data-baseweb="popover"] [role="listbox"], .stApp [data-baseweb="menu"] { background:var(--card) !important; border:1px solid var(--line) !important; }
-.stApp [role="option"] { color:var(--text) !important; }
-.stApp [role="option"]:hover { background:var(--soft) !important; }
-.stApp [data-testid="stSidebar"] :is(p,label,span) { color:var(--text); }
-.stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color:var(--muted); }
-.stApp [data-testid="stAlert"] :is(p,span) { color:inherit; }
-.tv-hero { margin-bottom:13px; }
-.tv-step { margin-top:1.65rem; }
-@media(max-width:850px) { .block-container { padding-left:1rem; padding-right:1rem; } .tv-hero { padding:17px; gap:12px; } .tv-hero .tv-brand { font-size:1.35rem; } .tv-chip { margin-top:4px; } }
-
-
-/* Subtle surveillance ambience: radar sweep + CCTV scan. Kept behind all controls. */
-.stApp { position: relative; isolation: isolate; }
-.stApp::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  opacity: .30;
-  background-image:
-    linear-gradient(rgba(52,211,153,.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(52,211,153,.055) 1px, transparent 1px),
-    radial-gradient(ellipse at 82% 12%, rgba(52,211,153,.10), transparent 34%);
-  background-size: 42px 42px, 42px 42px, auto;
-  mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 55%, transparent 100%);
-}
-.stApp::after {
-  content: ""; position: fixed; z-index: 0; pointer-events: none;
-  width: min(34vw, 390px); aspect-ratio: 1; right: 4vw; top: 105px;
-  border-radius: 50%; opacity: .16;
-  border: 1px solid rgba(52,211,153,.38);
-  background:
-    radial-gradient(circle, transparent 0 28%, rgba(52,211,153,.18) 28.2% 28.6%, transparent 28.9% 49%, rgba(52,211,153,.17) 49.2% 49.6%, transparent 49.9% 69%, rgba(52,211,153,.14) 69.2% 69.5%, transparent 69.8%),
-    conic-gradient(from 0deg, transparent 0deg 292deg, rgba(52,211,153,.02) 300deg, rgba(52,211,153,.38) 350deg, transparent 360deg);
-  box-shadow: 0 0 45px rgba(240,173,61,.07), inset 0 0 32px rgba(240,173,61,.04);
-  animation: tv-radar-rotate 24s linear infinite;
-}
-/* Keep Streamlit's interactive content above decorative layers. */
-.stApp > div, [data-testid="stSidebar"] { position: relative; z-index: 1; }
-.tv-hero { isolation: isolate; }
-.tv-hero::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
-  background: linear-gradient(110deg, transparent 0 42%, rgba(167,243,208,.10) 50%, transparent 58%);
-  background-size: 220% 100%; animation: tv-hero-scan 9s ease-in-out infinite;
-}
-@keyframes tv-radar-rotate { to { transform: rotate(360deg); } }
-@keyframes tv-hero-scan { 0%, 20% { background-position: 120% 0; } 75%, 100% { background-position: -120% 0; } }
-@media (max-width: 800px) { .stApp::after { width: 230px; right: -95px; top: 130px; opacity: .10; } }
-@media (prefers-reduced-motion: reduce) { .stApp::after, .tv-hero::after { animation: none !important; } }
-
-
-/* Accessibility pass: stronger contrast for dark mode and consistent theme-aware controls. */
-.stApp [data-testid="stMarkdownContainer"],
-.stApp [data-testid="stMarkdownContainer"] p,
-.stApp [data-testid="stMarkdownContainer"] li,
-.stApp [data-testid="stMarkdownContainer"] label,
-.stApp [data-testid="stMarkdownContainer"] small { color: var(--text); }
-.stApp [data-testid="stCaptionContainer"], .stApp [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
-.stApp [data-testid="stWidgetLabel"] *, .stApp [data-testid="stMetricLabel"] *,
-.stApp [data-testid="stRadio"] *, .stApp [data-testid="stCheckbox"] *,
-.stApp [data-testid="stToggle"] *, .stApp [data-testid="stSlider"] * { color: var(--text); }
-.stApp input, .stApp textarea, .stApp [contenteditable="true"] { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; caret-color: var(--accent) !important; }
-.stApp [data-baseweb="select"] *, .stApp [data-baseweb="popover"] *,
-.stApp [role="listbox"] *, .stApp [role="option"] { color: var(--text) !important; }
-.stApp [data-testid="stDataFrame"], .stApp [data-testid="stTable"] { color: var(--text) !important; }
-.stApp [data-testid="stAlert"] p, .stApp [data-testid="stAlert"] span { color: inherit !important; }
-.stApp [data-testid="stExpander"] summary, .stApp [data-testid="stExpander"] summary * { color: var(--text) !important; }
-.tv-card, .tv-card p, .tv-card strong, .tv-card small, .tv-note, .tv-intro { color: var(--text); }
-.tv-note, .tv-intro { color: var(--muted) !important; }
-.tv-table th { color: var(--muted) !important; }
-.tv-table td { color: var(--text) !important; }
-/* Do not let the decorative radar layer dim or cover Streamlit content. */
-.stApp::before, .stApp::after, .tv-hero::after { pointer-events:none !important; }
-
-/* Emerald theme readability refinements */
-.stApp [data-testid="stMarkdownContainer"] :is(p,li,strong,em,span,small) { color: var(--text); }
-.stApp [data-testid="stCaptionContainer"] *, .stApp .tv-note, .stApp .tv-intro { color: var(--muted) !important; }
-.stApp [data-testid="stSelectbox"] [data-baseweb="select"] *, .stApp [data-testid="stMultiSelect"] [data-baseweb="select"] * { color: var(--text) !important; }
-.stApp [data-testid="stFileUploader"] *, .stApp [data-testid="stSlider"] *, .stApp [data-testid="stRadio"] label *, .stApp [data-testid="stCheckbox"] label * { color: var(--text) !important; }
-.stApp [data-testid="stAlert"] *, .stApp [data-testid="stNotification"] * { color: inherit; }
-.stApp [data-testid="stMetric"] [data-testid="stMetricLabel"] *, .stApp [data-testid="stMetric"] [data-testid="stMetricValue"] { color: var(--text) !important; }
-.stApp [data-testid="stExpander"] summary, .stApp [data-testid="stExpander"] summary * { color: var(--text) !important; }
+/* ---- Radar + CCTV background (decorative, behind content, GPU-only animation) ---- */
+@keyframes tv-sweep { to { transform: rotate(360deg); } }
+@keyframes tv-scan { 0% { transform: translateY(-3vh); opacity: 0; } 10%, 90% { opacity: 1; } 100% { transform: translateY(103vh); opacity: 0; } }
+@keyframes tv-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.stApp::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;   /* static CCTV grid, fades out toward the bottom */
+  background: linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 56px 56px, linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 56px 56px;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 75%); mask-image: linear-gradient(to bottom, #000, transparent 75%); }
+.stApp::after { content: ""; position: fixed; z-index: 0; pointer-events: none; right: -26vmin; bottom: -34vmin; width: 92vmin; height: 92vmin; border-radius: 50%; /* slow radar sweep */
+  background: conic-gradient(from 0deg, transparent 0 305deg, rgba(var(--radar), calc(var(--radar-a) * .5)) 345deg, rgba(var(--radar), var(--radar-a)) 360deg),
+    repeating-radial-gradient(circle, transparent 0 11vmin, rgba(var(--radar), .12) 11vmin calc(11vmin + 1px));
+  -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 70%); mask-image: radial-gradient(circle, #000 25%, transparent 70%);
+  animation: tv-sweep 22s linear infinite; will-change: transform; }
+[data-testid="stAppViewContainer"] { position: relative; z-index: 1; }
+[data-testid="stAppViewContainer"]::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 1px; z-index: -1; pointer-events: none;   /* slow horizontal scan line */
+  background: linear-gradient(90deg, transparent, rgba(var(--radar), .5), transparent); box-shadow: 0 0 14px 1px rgba(var(--radar), .25); animation: tv-scan 13s linear infinite; will-change: transform; }
+.tv-hero > * { position: relative; z-index: 1; }
+.tv-hero::before { content: ""; position: absolute; z-index: 0; right: -70px; top: -100px; width: 320px; height: 320px; border-radius: 50%;   /* header radar */
+  background: conic-gradient(from 0deg, transparent 0 290deg, rgba(34,211,238,.30) 340deg, rgba(103,232,249,.75) 360deg),
+    repeating-radial-gradient(circle, transparent 0 30px, rgba(103,232,249,.16) 30px 31px);
+  -webkit-mask-image: radial-gradient(circle, #000 30%, transparent 72%); mask-image: radial-gradient(circle, #000 30%, transparent 72%); animation: tv-sweep 10s linear infinite; will-change: transform; }
+.tv-rec { position: absolute; z-index: 1; right: 22px; top: 16px; display: inline-flex; align-items: center; gap: 7px; font-size: .68rem; letter-spacing: .14em; color: #a5f3fc; }
+.tv-rec i { width: 7px; height: 7px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; animation: tv-blink 2.4s ease-in-out infinite; }
+@media (max-width: 640px) { .stApp::after, [data-testid="stAppViewContainer"]::before { display: none; } .tv-rec { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .stApp::after, .stApp::before, .tv-hero::before, .tv-rec i, [data-testid="stAppViewContainer"]::before { animation: none !important; } }

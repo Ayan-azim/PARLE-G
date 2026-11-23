@@ -39,8 +39,11 @@ def sidebar():
             reg_path = common.RUNS / "_registry" / "registry.csv"
             reg_path.parent.mkdir(parents=True, exist_ok=True)
             reg_path.write_bytes(up.getbuffer())
-        elif (ROOT / "registry.csv").is_file():
-            reg_path = ROOT / "registry.csv"
+        else:
+            for candidate in (ROOT / "data" / "registry.csv", ROOT / "registry.csv"):
+                if candidate.is_file():
+                    reg_path = candidate
+                    break
         if reg_path:
             try:
                 count = _count(str(reg_path), reg_path.stat().st_mtime)
@@ -59,7 +62,7 @@ def sidebar():
         known = st.slider("Minimum known characters", 1, 10, int(D.min_known_chars))
         thr = st.slider("No-match threshold", 0.0, 1.0, float(D.no_match_threshold), 0.01)
         debug = st.toggle("Show debug view", value=False)
-        mock = st.toggle("Use mock data", value=True)
+        mock = st.toggle("Use mock data", value=False)
         scenario = st.radio("Mock scenario", list(common.MOCK_FILES), disabled=not mock) if mock else list(common.MOCK_FILES)[0]
     return Settings(sample_fps=fps, min_known_chars=known, no_match_threshold=thr), reg_path, debug, mock, scenario
 
@@ -80,8 +83,7 @@ elif not use_mock and src.startswith("mock"):
 
 st.markdown(f'<div class="tv-hero">{common.logo_svg(64, "h")}<div><div class="tv-brand">VEHICLE <span>TRACKER</span></div>'
             f'<div class="tv-tag">{common.TAGLINE}</div><span class="tv-chip">Plate recovery</span><span class="tv-chip">Evidence fusion</span>'
-            f'<span class="tv-chip">Registry matching</span><span class="tv-chip">Investigation reports</span></div></div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-intro">Upload CCTV footage, review recovered plate evidence, compare registry candidates, and export an investigation report.</div>', unsafe_allow_html=True)
+            f'<span class="tv-chip">Registry matching</span><span class="tv-chip">Court-ready reports</span></div><span class="tv-rec"><i></i>SYSTEM READY</span></div>', unsafe_allow_html=True)
 stats_slot = st.container()
 st.markdown('<div class="tv-step"><span class="tv-num">1</span>Upload and input</div>', unsafe_allow_html=True)
 input_step.render(settings, use_mock, scenario, registry)

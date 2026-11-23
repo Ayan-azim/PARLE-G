@@ -14,8 +14,6 @@ from app.components.common import STRETCH
 from schema import Settings, UserHints
 
 STAGES = ["Detecting vehicles", "Tracking", "Reading plates", "Fusing evidence", "Matching registry"]
-COLOURS = ["(not specified)", "white", "silver", "grey", "black", "red", "blue", "green", "yellow", "brown", "orange"]
-TYPES = ["(not specified)", "car", "SUV", "hatchback", "sedan", "two-wheeler", "auto-rickshaw", "truck", "bus"]
 EXTS = {"mp4", "avi", "mov"}
 
 
@@ -31,12 +29,6 @@ def _probe(path: Path):
         return False
 
 
-def _hints(plate: str, colour: str, body: str) -> UserHints:
-    return UserHints(partial_plate=plate.strip().upper() or None,
-                     colour=None if colour == COLOURS[0] else colour,
-                     body_type=None if body == TYPES[0] else body)
-
-
 def render(settings: Settings, use_mock: bool, scenario: str, registry_path):
     c1, c2 = st.columns([3, 2], gap="large")
     with c1:
@@ -47,18 +39,14 @@ def render(settings: Settings, use_mock: bool, scenario: str, registry_path):
         elif use_mock:
             st.info("Mock mode: no video is needed. The supplied JSON is loaded directly.")
     with c2:
-        plate = st.text_input("Partial plate hint (optional)", placeholder="CG04??1234", help="Use ? or * for unknown characters.")
-        colour = st.selectbox("Vehicle colour (optional)", COLOURS)
-        body = st.selectbox("Vehicle type (optional)", TYPES)
         go = st.button("Analyse Footage", type="primary", **STRETCH)
         if use_mock:
-            st.caption("Hints and settings do not change mock results; they apply to live runs.")
+            st.caption("Mock mode uses supplied sample results; no AI is run.")
 
     if not go:
         return
-    if plate.strip() and any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?*" for ch in plate.strip().upper()):
-        return st.error("Plate hint can only contain letters, digits, ? and *.")
-    hints = _hints(plate, colour, body)
+    # Plate, colour, and body type are inferred by the backend and shown in the results.
+    hints = UserHints()
     run_id = datetime.now().strftime("run_%Y%m%d_%H%M%S")
     if up:  # same clip + same vision settings -> same run folder, so the saved vision output is reused
         h = hashlib.sha1(up.getbuffer())

@@ -9,8 +9,8 @@ from pathlib import Path
 
 from schema import AnalysisResult, Settings, UserHints
 
-VISION_IMPORT = "pipeline.vision"      # must expose run_vision(video_path, settings, run_dir) -> VisionOutput
-ANALYSE_IMPORT = "pipeline.matching"   # must expose analyse(vision, registry_csv, settings, hints, run_dir) -> AnalysisResult
+VISION_IMPORT = "vision.pipeline"      # exposes run_vision(video_path, settings, run_dir) -> VisionOutput
+ANALYSE_IMPORT = "matching.analyse"    # exposes analyse(vision, registry_csv, settings, hints, run_dir) -> AnalysisResult
 
 
 class PipelineNotReady(RuntimeError):

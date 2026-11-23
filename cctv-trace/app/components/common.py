@@ -23,7 +23,7 @@ MOCK_FILES = {
 
 # Frontend-only switch. False hides make/model, registry colour/type, observed colour/body type and vehicle class.
 # The data stays in the result objects and JSON; set True to show it all again.
-SHOW_VEHICLE_DETAILS = False
+SHOW_VEHICLE_DETAILS = True
 _DETAIL_WORDS = re.compile(r"\b(colou?r|body type|registered|make|model)\b", re.I)
 
 
@@ -41,11 +41,11 @@ def _version():
 STRETCH = {"width": "stretch"} if _version() >= (1, 50) else {"use_container_width": True}
 
 PALETTES = {
-    "light": dict(bg="#f4f6fb", card="#ffffff", line="#e3e8f2", text="#0e1730", muted="#5b6784", accent="#0F9F75", accent2="#34D399", soft="#E8F8F1",
-                  field="#ffffff", shadow="rgba(30,41,90,.13)", teal="#0F9F75", ok_bg="#dcfce7", ok_bd="#16a34a", ok_tx="#14532d", warn_bg="#fef3c7",
+    "light": dict(bg="#f4f6fb", card="#ffffff", line="#e3e8f2", text="#0e1730", muted="#5b6784", accent="#4f46e5", accent2="#06b6d4", soft="#eef0ff",
+                  field="#ffffff", shadow="rgba(30,41,90,.13)", teal="#0891b2", radar="37,99,235", radar_a=".16", grid="rgba(79,70,229,.07)", ok_bg="#dcfce7", ok_bd="#16a34a", ok_tx="#14532d", warn_bg="#fef3c7",
                   warn_bd="#d97706", warn_tx="#78350f", bad_bg="#fee2e2", bad_bd="#dc2626", bad_tx="#7f1d1d", grey_bg="#f1f5f9", grey_bd="#94a3b8", grey_tx="#475569"),
-    "dark": dict(bg="#080d1c", card="#0f1730", line="#1f2a4d", text="#e8ecf8", muted="#93a0c4", accent="#34D399", accent2="#A7F3D0", soft="#102820",
-                 field="#0c1329", shadow="rgba(0,0,0,.55)", teal="#34D399", ok_bg="#0f2a1d", ok_bd="#22c55e", ok_tx="#bbf7d0", warn_bg="#2e2410",
+    "dark": dict(bg="#080d1c", card="#0f1730", line="#1f2a4d", text="#e8ecf8", muted="#93a0c4", accent="#818cf8", accent2="#22d3ee", soft="#141d3c",
+                 field="#0c1329", shadow="rgba(0,0,0,.55)", teal="#22d3ee", radar="34,211,238", radar_a=".22", grid="rgba(129,140,248,.09)", ok_bg="#0f2a1d", ok_bd="#22c55e", ok_tx="#bbf7d0", warn_bg="#2e2410",
                  warn_bd="#f59e0b", warn_tx="#fde68a", bad_bg="#2f1416", bad_bd="#f87171", bad_tx="#fecaca", grey_bg="#18233d", grey_bd="#64748b", grey_tx="#cbd5e1"),
 }
 
@@ -60,7 +60,7 @@ def theme_css() -> str:
 
 def logo_svg(size: int = 44, uid: str = "a") -> str:
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 48 48" role="img" aria-label="{APP_NAME} logo"><defs><linearGradient id="lg{uid}" x1="0" y1="0" x2="1" y2="1">'
-            '<stop offset="0" stop-color="#047857"/><stop offset="1" stop-color="#34D399"/></linearGradient></defs>'
+            '<stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>'
             f'<rect width="48" height="48" rx="13" fill="url(#lg{uid})"/>'
             '<path d="M24 8c-6.6 0-12 5.2-12 11.7 0 8.2 12 18.3 12 18.3s12-10.1 12-18.3C36 13.2 30.6 8 24 8z" fill="none" stroke="#fff" stroke-width="2.6"/>'
             '<circle cx="24" cy="20" r="5.2" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="24" cy="20" r="1.9" fill="#fff"/>'
