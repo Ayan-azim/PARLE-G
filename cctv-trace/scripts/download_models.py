@@ -1,37 +1,24 @@
-
-from pathlib import Path
+import os
 import shutil
-import urllib.request
+from huggingface_hub import hf_hub_download
 from ultralytics import YOLO
-import easyocr
 
-MODELS_DIR = Path("models")
-EASYOCR_DIR = MODELS_DIR / "easyocr"
-MODELS_DIR.mkdir(exist_ok=True)
-EASYOCR_DIR.mkdir(exist_ok=True)
+os.makedirs("weights", exist_ok=True)
 
-# 1. Download YOLOv8 COCO weights
-for name in ["yolov8n.pt", "yolov8s.pt"]:
-    target = MODELS_DIR / name
-    if not target.exists():
-        print(f"Downloading {name}...")
-        YOLO(name)  # downloads to current dir
-        shutil.move(name, target)
+# 1. Vehicle detector (YOLO11 Small — good balance of speed and accuracy)
+print("Downloading vehicle detector...")
+v_model = YOLO("yolo11s.pt")
+if os.path.exists("yolo11s.pt"):
+    shutil.move("yolo11s.pt", "weights/yolo11s.pt")
 
-# 2. Download pretrained YOLOv8 License Plate detector (Hugging Face)
-lp_path = MODELS_DIR / "lp_detector.pt"
-if not lp_path.exists():
-    print("Downloading license plate detector...")
-    url = "https://huggingface.co/Koushim/yolov8-license-plate-detection/resolve/main/best.pt"
-    urllib.request.urlretrieve(url, lp_path)
-
-# 3. Download EasyOCR English weights into models/easyocr/
-print("Caching EasyOCR English weights...")
-reader = easyocr.Reader(
-    ["en"],
-    gpu=False,  # set True if using CUDA
-    model_storage_directory=str(EASYOCR_DIR),
-    download_enabled=True,
+# 2. Dedicated Indian license plate detector
+print("Downloading Indian plate detector...")
+plate_path = hf_hub_download(
+    repo_id="subash1652007/indian-plate-ocr",
+    filename="yolo_best.pt",
+    local_dir="weights"
 )
+os.replace(plate_path, "weights/indian_plate_best.pt")
 
-print("All models downloaded and cached in models/!")
+print("Done! Saved models in weights/:")
+print(os.listdir("weights"))
