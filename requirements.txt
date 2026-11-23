@@ -1,0 +1,9 @@
+streamlit>=1.37
+pandas
+numpy
+pillow
+opencv-python-headless
+plotly
+jinja2
+pydantic>=2
+xhtml2pdf>=0.2.16

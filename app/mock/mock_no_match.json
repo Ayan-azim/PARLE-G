@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0",
+  "run_id": "demo_002_nomatch",
+  "created_at": "2026-11-22T22:45:00+05:30",
+  "settings": {
+    "sample_fps": 5.0,
+    "max_clip_seconds": 30.0,
+    "min_frame_sharpness": 60.0,
+    "min_support": 0.5,
+    "min_share": 0.6,
+    "min_known_chars": 3,
+    "no_match_threshold": 0.55,
+    "min_margin": 0.1,
+    "weight_plate": 0.6,
+    "weight_colour": 0.2,
+    "weight_type": 0.2,
+    "top_k": 5
+  },
+  "hints": { "partial_plate": null, "colour": null, "body_type": null },
+  "vision": {
+    "clip_name": "clip_far_bike.mp4",
+    "duration_s": 4.0,
+    "fps": 25.0,
+    "frame_size": [1280, 720],
+    "sampled_fps": 5.0,
+    "track_id": 1,
+    "target_selection_reason": "only vehicle track in the clip",
+    "vehicle_class": "motorcycle",
+    "vehicle_crop_path": "frames/vehicle_best.jpg",
+    "frames": [
+      {
+        "frame_idx": 40, "timestamp_s": 1.6, "sharpness": 66.0, "quality_weight": 0.52, "used": true, "skip_reason": null,
+        "vehicle_box": [610.0, 300.0, 760.0, 470.0], "plate_box": [668.0, 440.0, 712.0, 458.0],
+        "plate_crop_path": "frames/f040_plate.png", "enhanced_crop_path": "frames/f040_plate_enh.png",
+        "raw_text": "MG071K5S21",
+        "chars": [
+          {"char": "M", "conf": 0.21}, {"char": "G", "conf": 0.80}, {"char": "0", "conf": 0.33}, {"char": "7", "conf": 0.18},
+          {"char": "1", "conf": 0.62}, {"char": "K", "conf": 0.22}, {"char": "5", "conf": 0.30}, {"char": "S", "conf": 0.25},
+          {"char": "2", "conf": 0.28}, {"char": "1", "conf": 0.31}
+        ]
+      },
+      {
+        "frame_idx": 45, "timestamp_s": 1.8, "sharpness": 61.0, "quality_weight": 0.48, "used": true, "skip_reason": null,
+        "vehicle_box": [602.0, 296.0, 770.0, 478.0], "plate_box": [664.0, 446.0, 716.0, 466.0],
+        "plate_crop_path": "frames/f045_plate.png", "enhanced_crop_path": "frames/f045_plate_enh.png",
+        "raw_text": "HG811X6571",
+        "chars": [
+          {"char": "H", "conf": 0.18}, {"char": "G", "conf": 0.30}, {"char": "8", "conf": 0.22}, {"char": "1", "conf": 0.20},
+          {"char": "1", "conf": 0.45}, {"char": "X", "conf": 0.19}, {"char": "6", "conf": 0.24}, {"char": "5", "conf": 0.21},
+          {"char": "7", "conf": 0.17}, {"char": "1", "conf": 0.26}
+        ]
+      }
+    ],
+    "notes": ["Plate occupies only about 44 px in width, so most characters are below the readability threshold."]
+  },
+  "fusion": {
+    "pattern": "?G??1?????",
+    "length": 10,
+    "known_count": 2,
+    "frames_used": [40, 45],
+    "format_note": "Only 2 positions readable; the format cannot be checked",
+    "chars": [
+      {"position": 0, "char": "?", "status": "unknown", "confidence": 0.109, "share": 0.559, "top_candidate": "M", "votes": {"M": 0.109, "H": 0.086}},
+      {"position": 1, "char": "G", "status": "known", "confidence": 0.56, "share": 1.0, "top_candidate": "G", "votes": {"G": 0.56}},
+      {"position": 2, "char": "?", "status": "unknown", "confidence": 0.172, "share": 0.62, "top_candidate": "0", "votes": {"0": 0.172, "8": 0.106}},
+      {"position": 3, "char": "?", "status": "unknown", "confidence": 0.096, "share": 0.505, "top_candidate": "1", "votes": {"1": 0.096, "7": 0.094}},
+      {"position": 4, "char": "1", "status": "known", "confidence": 0.54, "share": 1.0, "top_candidate": "1", "votes": {"1": 0.54}},
+      {"position": 5, "char": "?", "status": "unknown", "confidence": 0.114, "share": 0.5, "top_candidate": "K", "votes": {"K": 0.114, "X": 0.091}},
+      {"position": 6, "char": "?", "status": "unknown", "confidence": 0.156, "share": 0.57, "top_candidate": "5", "votes": {"5": 0.156, "6": 0.115}},
+      {"position": 7, "char": "?", "status": "unknown", "confidence": 0.13, "share": 0.55, "top_candidate": "S", "votes": {"S": 0.13, "5": 0.101}},
+      {"position": 8, "char": "?", "status": "unknown", "confidence": 0.146, "share": 0.64, "top_candidate": "2", "votes": {"2": 0.146, "7": 0.082}},
+      {"position": 9, "char": "?", "status": "unknown", "confidence": 0.286, "share": 1.0, "top_candidate": "1", "votes": {"1": 0.286}}
+    ]
+  },
+  "attributes": {
+    "colour": {
+      "value": "black", "confidence": 0.64, "hex": "#1E1E22",
+      "alternatives": [{"value": "grey", "confidence": 0.25}],
+      "method": "k-means on body region, mapped to nearest named colour in Lab space; low resolution lowers confidence"
+    },
+    "body_type": {
+      "value": "two-wheeler", "confidence": 0.58,
+      "alternatives": [{"value": "auto-rickshaw", "confidence": 0.2}],
+      "method": "detector class 'motorcycle' + box aspect ratio"
+    },
+    "make_model": null
+  },
+  "verdict": {
+    "status": "no_confident_match",
+    "headline": "No confident match",
+    "top_confidence": null,
+    "reason": "Only 2 of 10 plate characters could be read. That is too little to separate registry entries, so no candidate is presented as a match.",
+    "rule_checks": [
+      {"name": "minimum known characters", "passed": false, "detail": "2 known, minimum is 3"},
+      {"name": "best final score", "passed": true, "detail": "0.69 is at or above the 0.55 threshold"},
+      {"name": "margin over second candidate", "passed": true, "detail": "0.22 is at or above the 0.10 minimum"}
+    ]
+  },
+  "candidates": [],
+  "weak_leads": [
+    {
+      "rank": 1, "plate": "CG07IK5521", "make": "Hero", "model": "Splendor", "registry_colour": "red", "registry_type": "two-wheeler",
+      "confidence": 0.18,
+      "breakdown": {"plate_score": 0.82, "colour_score": 0.0, "type_score": 1.0, "final_score": 0.69, "evidence_factor": 0.72, "margin_factor": 1.0},
+      "char_matches": [
+        {"position": 0, "observed": "?", "registry": "C", "status": "unknown"},
+        {"position": 1, "observed": "G", "registry": "G", "status": "match"},
+        {"position": 2, "observed": "?", "registry": "0", "status": "unknown"},
+        {"position": 3, "observed": "?", "registry": "7", "status": "unknown"},
+        {"position": 4, "observed": "1", "registry": "I", "status": "confusable"},
+        {"position": 5, "observed": "?", "registry": "K", "status": "unknown"},
+        {"position": 6, "observed": "?", "registry": "5", "status": "unknown"},
+        {"position": 7, "observed": "?", "registry": "5", "status": "unknown"},
+        {"position": 8, "observed": "?", "registry": "2", "status": "unknown"},
+        {"position": 9, "observed": "?", "registry": "1", "status": "unknown"}
+      ],
+      "reasons": [
+        "Position 2 matches 'G'; position 5 reads '1', which is confusable with 'I' (partial credit)",
+        "Only 2 characters were readable, so this fit is weak evidence",
+        "Colour conflicts: observed black, registered red",
+        "Body type matches: two-wheeler"
+      ]
+    },
+    {
+      "rank": 2, "plate": "CG11AB4129", "make": "Bajaj", "model": "Pulsar", "registry_colour": "black", "registry_type": "two-wheeler",
+      "confidence": 0.05,
+      "breakdown": {"plate_score": 0.118, "colour_score": 1.0, "type_score": 1.0, "final_score": 0.47, "evidence_factor": 0.72, "margin_factor": 0.45},
+      "char_matches": [
+        {"position": 0, "observed": "?", "registry": "C", "status": "unknown"},
+        {"position": 1, "observed": "G", "registry": "G", "status": "match"},
+        {"position": 2, "observed": "?", "registry": "1", "status": "unknown"},
+        {"position": 3, "observed": "?", "registry": "1", "status": "unknown"},
+        {"position": 4, "observed": "1", "registry": "A", "status": "mismatch"},
+        {"position": 5, "observed": "?", "registry": "B", "status": "unknown"},
+        {"position": 6, "observed": "?", "registry": "4", "status": "unknown"},
+        {"position": 7, "observed": "?", "registry": "1", "status": "unknown"},
+        {"position": 8, "observed": "?", "registry": "2", "status": "unknown"},
+        {"position": 9, "observed": "?", "registry": "9", "status": "unknown"}
+      ],
+      "reasons": [
+        "Position 2 matches 'G' but position 5 conflicts ('1' observed, 'A' registered)",
+        "Colour and body type match, but that alone does not identify a vehicle"
+      ]
+    }
+  ],
+  "warnings": ["Plate is very small in frame; consider a closer or higher-resolution clip."],
+  "timings_s": {"vision": 5.1, "fusion": 0.01, "matching": 0.04, "report": 0.9}
+}

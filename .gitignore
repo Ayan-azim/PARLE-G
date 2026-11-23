@@ -48,3 +48,20 @@ cctv-trace/app/report/output/
 *.avi
 *.mov
 smoke_plate_*.jpg
+
+# Streamlit cache
+.streamlit/cache/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Editor swap and backup files
+*.swp
+*.swo
+*~
+
+# Additional OS files
+Desktop.ini

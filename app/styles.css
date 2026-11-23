@@ -1,0 +1,352 @@
+/* ------------------------------------------------------------------ *
+ * TraceVision global styles
+ * Variables come from common.theme_css(): --bg, --card, --line, --text,
+ * --muted, --accent, --accent2, --soft, --field, --shadow, --teal,
+ * --ok-bg/bd/tx, --warn-bg/bd/tx, --bad-bg/bd/tx, --grey-bg/bd/tx,
+ * --hero-grad, --card-top-match/nomatch/time/total, --toggle-sun/moon.
+ * ------------------------------------------------------------------ */
+
+html, body, [class*="css"] { font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+
+.stApp {
+  background: var(--bg);
+  color: var(--text);
+  transition: background .35s ease, color .35s ease;
+}
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stSidebar"] {
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  transition: background .35s ease, border-color .35s ease;
+}
+.block-container { padding-top: 2rem; max-width: 1200px; }
+
+.stApp [data-testid="stMarkdownContainer"] :is(p, li, h1, h2, h3, h4, strong, em, td, th) { color: var(--text); }
+.stApp [data-testid="stCaptionContainer"], .stApp [data-testid="stCaptionContainer"] p { color: var(--muted); }
+.stApp :is([data-testid="stWidgetLabel"] p, [data-testid="stMetricLabel"] p, [data-testid="stMetricValue"],
+           [data-testid="stRadio"] label p, [data-testid="stToggle"] p) { color: var(--text); }
+
+.stApp [data-baseweb="input"], .stApp [data-baseweb="select"] > div, .stApp [data-baseweb="textarea"] {
+  background: var(--field) !important;
+  border-color: var(--line) !important;
+  transition: border-color .2s, box-shadow .2s, background .35s;
+}
+.stApp :is(input, textarea) { color: var(--text) !important; }
+.stApp [data-baseweb="input"]:focus-within, .stApp [data-baseweb="select"] > div:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent) !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] {
+  background: var(--field);
+  border: 1.5px dashed var(--line);
+  transition: border-color .25s, background .25s, transform .15s;
+}
+.stApp [data-testid="stFileUploaderDropzone"]:hover {
+  border-color: var(--accent);
+  background: var(--soft);
+  transform: translateY(-1px);
+}
+.stApp [data-testid="stFileUploaderDropzone"] :is(span, small, div) { color: var(--muted); }
+
+/* Buttons: primary and secondary both have a subtle, professional hover */
+.stApp :is(button[kind="secondary"], button[data-testid="stBaseButton-secondary"]) {
+  background: var(--card);
+  border: 1px solid var(--line);
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.stApp :is(button[kind="secondary"], button[data-testid="stBaseButton-secondary"]) p { color: var(--text); }
+.stApp :is(button[kind="secondary"], button[data-testid="stBaseButton-secondary"]):hover:not(:disabled) {
+  background: var(--soft);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.stApp :is(button[kind="primary"], button[data-testid="stBaseButton-primary"]) {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  transition: transform .15s ease, box-shadow .25s ease, filter .2s ease;
+}
+.stApp :is(button[kind="primary"], button[data-testid="stBaseButton-primary"]) p { color: #fff; }
+.stApp :is(button[kind="primary"], button[data-testid="stBaseButton-primary"]):hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 45%, transparent);
+  filter: brightness(1.05);
+}
+.stApp :is(button[kind="primary"], button[data-testid="stBaseButton-primary"]):active:not(:disabled) { transform: translateY(0); }
+.stApp button { transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease, filter .2s ease; }
+
+/* Expanders behave like cards */
+.stApp [data-testid="stExpander"] details {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color .25s, box-shadow .25s, transform .15s;
+}
+.stApp [data-testid="stExpander"] details:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px var(--shadow);
+  transform: translateY(-1px);
+}
+.stApp [data-testid="stExpander"] summary p { color: var(--text); }
+
+.stApp [data-testid="stVerticalBlockBorderWrapper"] {
+  border-color: var(--line) !important;
+  transition: border-color .25s, box-shadow .25s, transform .15s;
+}
+.stApp [data-testid="stVerticalBlockBorderWrapper"]:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 4px 14px var(--shadow);
+}
+
+/* Images: gentle scale on hover, no jarring motion */
+.stApp [data-testid="stImage"] img {
+  border-radius: 8px;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.stApp [data-testid="stImage"] img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+/* Dialog (used by the evidence viewer) */
+div[role="dialog"] {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+div[role="dialog"] :is(p, h1, h2, h3, span, label, small) { color: var(--text); }
+
+/* Hero banner */
+.tv-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--hero-grad);
+  box-shadow: 0 4px 14px var(--shadow);
+  transition: background .35s ease, border-color .25s;
+}
+.tv-hero svg circle:first-of-type { stroke: var(--accent); transition: stroke .35s; }
+.tv-hero svg circle:nth-of-type(2) { fill: var(--teal); transition: fill .35s; }
+.tv-hero svg path { stroke: var(--accent); transition: stroke .35s; }
+
+.tv-brand { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.1; }
+.tv-brand span {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.tv-tag { color: var(--muted); font-size: .9rem; }
+
+/* Section header */
+.tv-step {
+  margin: 2rem 0 .75rem;
+  padding: 6px 0 6px 12px;
+  border-left: 4px solid var(--accent);
+  font-size: 1.25rem;
+  font-weight: 650;
+  color: var(--text);
+  transition: border-color .25s, color .25s;
+}
+
+/* Cards */
+.tv-card {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.tv-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px var(--shadow);
+  border-color: var(--accent);
+}
+.tv-verdict-match { border-left: 6px solid var(--ok-bd); }
+.tv-verdict-none { border-left: 6px solid var(--warn-bd); background: var(--warn-bg); }
+.tv-verdict h3 { margin: 4px 0 6px; font-size: 1.4rem; color: var(--text); }
+.tv-note { font-size: .82rem; color: var(--muted); }
+
+/* Pills */
+.tv-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 600;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.tv-pill:hover { transform: translateY(-1px); box-shadow: 0 3px 8px var(--shadow); }
+.stApp .tv-pill-ok { background: var(--ok-bg); color: var(--ok-tx); }
+.stApp .tv-pill-warn { background: var(--warn-bg); color: var(--warn-tx); }
+.stApp .tv-pill-bad { background: var(--bad-bg); color: var(--bad-tx); }
+.stApp .tv-pill-grey { background: var(--grey-bg); color: var(--grey-tx); }
+
+/* Plate character boxes */
+.tv-chars { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.tv-char, .tv-m {
+  width: 54px;
+  text-align: center;
+  border-radius: 10px;
+  padding: 8px 0;
+  border: 1.5px solid;
+  transition: transform .18s ease, box-shadow .18s ease;
+  cursor: default;
+}
+.tv-char:hover, .tv-m:hover {
+  transform: translateY(-3px) scale(1.07);
+  box-shadow: 0 8px 16px var(--shadow);
+}
+.tv-char b, .tv-m b { display: block; font: 700 1.6rem ui-monospace, Consolas, monospace; }
+.tv-char small, .tv-m small, .tv-m i { display: block; font-size: .72rem; font-style: normal; }
+.tv-hi, .tv-m-match { background: var(--ok-bg); border-color: var(--ok-bd); color: var(--ok-tx); }
+.tv-mid, .tv-m-confusable { background: var(--warn-bg); border-color: var(--warn-bd); color: var(--warn-tx); }
+.tv-unk, .tv-m-unknown { background: var(--grey-bg); border-color: var(--grey-bd); color: var(--grey-tx); }
+.tv-m-mismatch { background: var(--bad-bg); border-color: var(--bad-bd); color: var(--bad-tx); }
+
+.tv-legend { font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+
+/* Placeholder */
+.tv-ph {
+  background: var(--grey-bg);
+  border: 1px dashed var(--grey-bd);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: .8rem;
+  text-align: center;
+  padding: 28px 6px;
+}
+
+/* Colour swatch */
+.tv-swatch {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--grey-bd);
+  vertical-align: middle;
+  margin-right: 8px;
+  transition: transform .15s, box-shadow .15s;
+}
+.tv-swatch:hover { transform: scale(1.1); box-shadow: 0 3px 8px var(--shadow); }
+
+/* Tables */
+.tv-tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  margin-bottom: 8px;
+  transition: border-color .25s, box-shadow .25s;
+}
+.tv-tablewrap:hover { border-color: var(--accent); box-shadow: 0 4px 14px var(--shadow); }
+.tv-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tv-table th {
+  text-align: left;
+  padding: 9px 12px;
+  background: var(--soft);
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+.tv-table td { padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--text); vertical-align: top; }
+.tv-table tbody tr { transition: background .15s ease; }
+.tv-table tbody tr:hover { background: var(--soft); }
+.tv-table tbody tr:last-child td { border-bottom: none; }
+
+/* ---- Evidence viewer: true fullscreen ---- *
+ * We mark the dialog body with a .tv-viewer-fs element. Any stDialog that
+ * contains that marker gets stretched to the full viewport. */
+.tv-viewer-fs-marker { display: none; }
+
+div[data-testid="stDialog"]:has(.tv-viewer-fs-marker),
+div[data-testid="stDialogScrollable"]:has(.tv-viewer-fs-marker) {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: var(--card) !important;
+}
+div[data-testid="stDialog"] [data-testid="stDialogScrollableBody"],
+div[data-testid="stDialogScrollable"] [data-testid="stDialogScrollableBody"] {
+  background: var(--card) !important;
+}
+
+/* Viewer toolbar */
+.tv-vw-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 10px 10px 0 0;
+  flex-wrap: wrap;
+}
+.tv-vw-title { flex: 1 1 200px; font-weight: 600; color: var(--text); }
+.tv-vw-counter { font-size: .85rem; color: var(--muted); }
+.tv-vw-stage {
+  position: relative;
+  overflow: auto;
+  max-height: calc(100vh - 200px);
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background:
+    repeating-linear-gradient(45deg, var(--grey-bg) 0 12px, transparent 12px 24px),
+    var(--bg);
+  text-align: center;
+  padding: 16px;
+}
+.tv-vw-stage img {
+  image-rendering: pixelated;
+  max-width: none !important;
+  transition: width .2s ease;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.tv-vw-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+/* Dark-mode toggle pill (shown above the native toggle for visual polish) */
+.tv-theme-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--muted);
+  font-size: .8rem;
+  margin-bottom: 4px;
+}
+.tv-theme-pill .tv-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background .25s;
+}
+
+/* Stat card tweaks (the animated cards live in an iframe; these only affect
+ * the page chrome around them). */
+.tv-stats-frame { border: 0; width: 100%; height: 130px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
