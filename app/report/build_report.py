@@ -7,7 +7,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.components.common import SHOW_REGISTRY_DETAILS, resolve_image, safe_hex
+from app.components.common import APP_NAME, SHOW_VEHICLE_DETAILS, resolve_image, safe_hex, visible_reasons
 from schema import AnalysisResult
 
 GREEN, AMBER, GREY, RED = "#dcfce7", "#fef3c7", "#e5e7eb", "#fee2e2"
@@ -33,7 +33,9 @@ def _env() -> Environment:
     env.globals["fused_bg"] = lambda ch: GREY if ch.status != "known" else (GREEN if ch.confidence >= 0.8 else AMBER)
     env.globals["match_bg"] = lambda s: {"match": GREEN, "confusable": AMBER, "mismatch": RED}.get(s, GREY)
     env.globals["safe_hex"] = safe_hex
-    env.globals["show_registry"] = SHOW_REGISTRY_DETAILS
+    env.globals["show_details"] = SHOW_VEHICLE_DETAILS
+    env.globals["app_name"] = APP_NAME
+    env.filters["visible"] = visible_reasons
     return env
 
 

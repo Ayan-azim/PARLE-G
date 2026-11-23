@@ -10,7 +10,7 @@ Changes vs. the first version
   3. Tracking runs at >= TRACK_MIN_FPS so ByteTrack sees small motion between frames.
   4. Plate detection on every target frame, then OCR only on the MAX_OCR_FRAMES sharpest.
   5. Plate boxes are padded; sharpness is measured at a fixed height (resolution independent).
-  6. OCR words are grouped into lines before ordering left-to-right.
+  6. Fast plate OCR supplies a confidence for each character.
   7. quality_weight = sharpness / sum(sharpness of used frames) (no double-counting OCR conf).
   8. Stronger enhancement (upscale to >=128 px height, CLAHE, mild unsharp mask).
   9. If no frame passes the sharpness gate, the sharpest few are used and a note says so.
@@ -23,14 +23,13 @@ the word's confidence), and plate strings vary in length between frames. Align b
 from __future__ import annotations
 
 import argparse
-import re
 from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import cv2
-import easyocr
 import numpy as np
+from fast_plate_ocr import LicensePlateRecognizer
 from ultralytics import YOLO
 
 from schema import Box, CharReading, FrameReading, Settings, VisionOutput
@@ -45,22 +44,20 @@ PLATE_PAD_FRAC = 0.0        # padding around the detected plate box
 SHARPNESS_NORM_HEIGHT = 64   # plate crops are resized to this height before measuring sharpness
 ENH_MIN_HEIGHT = 128         # plate crops are upscaled to at least this height for OCR
 LEFT_TRIM_FRAC = 0.0         # set to ~0.08 to cut the blue "IND" strip; test on your clips first
-OCR_ALLOWLIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 # Lazy global model cache so repeated runs (Streamlit) do not reload weights
 _MODELS_CACHE: dict = {}
 
 
-def _get_models(models_dir: str = "models", use_gpu: bool = False):
+def _get_models(models_dir: str = "weights", use_gpu: bool = False):
     if not _MODELS_CACHE:
         m_dir = Path(models_dir)
-        _MODELS_CACHE["veh"] = YOLO(str(m_dir / "yolov8s.pt"))
-        _MODELS_CACHE["lp"] = YOLO(str(m_dir / "lp_detector.pt"))
-        _MODELS_CACHE["ocr"] = easyocr.Reader(
-            ["en"],
-            gpu=use_gpu,
-            model_storage_directory=str(m_dir / "easyocr"),
-            download_enabled=False,
+        if not m_dir.is_absolute():
+            m_dir = Path(__file__).resolve().parents[1] / m_dir
+        _MODELS_CACHE["veh"] = YOLO(str(m_dir / "yolo11s.pt"))
+        _MODELS_CACHE["lp"] = YOLO(str(m_dir / "indian_plate_best.pt"))
+        _MODELS_CACHE["ocr"] = LicensePlateRecognizer(
+            "cct-s-v2-global-model", device="cuda" if use_gpu else "cpu"
         )
     return _MODELS_CACHE["veh"], _MODELS_CACHE["lp"], _MODELS_CACHE["ocr"]
 
@@ -117,23 +114,26 @@ def _order_results(results: list) -> list:
     return [r for line in lines for r in sorted(line, key=lambda r: r[0][0][0])]
 
 
-def _read_plate_chars(reader: easyocr.Reader, enhanced_gray: np.ndarray) -> Tuple[str, List[CharReading]]:
+def _read_plate_chars(reader: LicensePlateRecognizer, enhanced_gray: np.ndarray) -> Tuple[str, List[CharReading]]:
     """
-    EasyOCR returns ONE confidence per word; it is copied to every character of that word.
-    len(raw_text) == len(chars) as schema.py requires. Nothing is corrected or guessed here.
+    The plate recognizer returns one confidence per character. Keep only alphanumeric
+    characters and their corresponding confidence, without correcting or guessing.
     """
-    results = reader.readtext(enhanced_gray, allowlist=OCR_ALLOWLIST, detail=1)
-    if not results:
+    # fast-plate-ocr's ONNX input expects channel-last BGR (H, W, 3), even when
+    # the enhanced plate itself is grayscale. A 2D array is interpreted as
+    # channel-first and reaches ONNX as (1, 1, H, W), causing a shape error.
+    enhanced_bgr = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+    results = reader.run(enhanced_bgr, return_confidence=True)
+    if not results or not results[0].plate:
         return "", []
-    raw_chars: List[str] = []
+    raw_text = str(results[0].plate).upper()
     readings: List[CharReading] = []
-    for _bbox, text, conf in _order_results(list(results)):
-        cleaned = re.sub(r"[^A-Z0-9]", "", text.upper())
-        c = round(min(max(float(conf), 0.0), 1.0), 4)
-        for ch in cleaned:
-            raw_chars.append(ch)
-            readings.append(CharReading(char=ch, conf=c))
-    return "".join(raw_chars), readings
+    probabilities = results[0].char_probs
+    for ch, conf in zip(raw_text, probabilities):
+        if ch.isalnum():
+            readings.append(CharReading(char=ch, conf=round(min(max(float(conf), 0.0), 1.0), 4)))
+    cleaned = "".join(reading.char for reading in readings)
+    return cleaned, readings
 
 
 # ----------------------------------------------------------------------------
@@ -150,12 +150,19 @@ def _detect_plate(lp_model, frame: np.ndarray, vbox: Tuple[float, float, float, 
     if veh.size == 0:
         return None, None, "empty vehicle crop"
 
-    res = lp_model.predict(veh, conf=0.25, verbose=False)[0]
+    roi_y1 = int(veh.shape[0] * 0.30)
+    bumper_roi = veh[roi_y1:, :]
+    if bumper_roi.size == 0:
+        return None, None, "empty vehicle crop"
+
+    res = lp_model.predict(bumper_roi, imgsz=640, conf=0.20, verbose=False)[0]
     if res.boxes is None or len(res.boxes) == 0:
         return None, None, "no plate detected"
 
     best = max(res.boxes, key=lambda b: float(b.conf[0]))
     lx1, ly1, lx2, ly2 = map(float, best.xyxy[0])
+    ly1 += roi_y1
+    ly2 += roi_y1
     padx, pady = (lx2 - lx1) * PLATE_PAD_FRAC, (ly2 - ly1) * PLATE_PAD_FRAC
     lx1, ly1 = max(0.0, lx1 - padx), max(0.0, ly1 - pady)
     lx2, ly2 = min(float(veh.shape[1]), lx2 + padx), min(float(veh.shape[0]), ly2 + pady)
@@ -174,7 +181,7 @@ def run_vision(
     video_path: str,
     settings: Settings,
     run_dir: str,
-    models_dir: str = "models",
+    models_dir: str = "weights",
     use_gpu: bool = False,
 ) -> VisionOutput:
     veh_model, lp_model, ocr_reader = _get_models(models_dir=models_dir, use_gpu=use_gpu)
@@ -220,6 +227,7 @@ def run_vision(
             if ok:
                 res = veh_model.track(
                     frame,
+                    imgsz=1280,
                     classes=list(VEHICLE_CLASS_MAP.keys()),
                     conf=0.35,
                     iou=0.5,

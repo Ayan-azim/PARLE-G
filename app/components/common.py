@@ -1,4 +1,4 @@
-"""Shared helpers: paths, safe HTML, image loading, session state, theming."""
+"""Shared helpers: branding, theme, paths, safe HTML, images, session state."""
 from __future__ import annotations
 
 import html
@@ -10,70 +10,90 @@ import streamlit as st
 
 from schema import AnalysisResult, load_result, save_result
 
+APP_NAME = "VEHICLE TRACKER"
+TAGLINE = "AI-Powered Vehicle Identification & Traceability"
 ROOT = Path(__file__).resolve().parents[2]
 RUNS = ROOT / "runs"
 MOCK_DIR = ROOT / "app" / "mock"
+ASSETS = ROOT / "app" / "assets"
 MOCK_FILES = {
     "Successful match": MOCK_DIR / "mock_result.json",
     "No confident match": MOCK_DIR / "mock_no_match.json",
 }
-# Set True to surface make/model and registry colour/type on candidate cards and in the report again.
-SHOW_REGISTRY_DETAILS = False
 
-# Palettes carry every CSS variable the app needs. Add new keys here, never remove one.
+# Frontend-only switch. False hides make/model, registry colour/type, observed colour/body type and vehicle class.
+# The data stays in the result objects and JSON; set True to show it all again.
+SHOW_VEHICLE_DETAILS = True
+_DETAIL_WORDS = re.compile(r"\b(colou?r|body type|registered|make|model)\b", re.I)
+
+
+def visible_reasons(reasons):
+    """Candidate reasons, without lines that talk about colour / body type / registry vehicle details."""
+    return list(reasons) if SHOW_VEHICLE_DETAILS else [r for r in reasons if not _DETAIL_WORDS.search(r)]
+
+
+def _version():
+    m = re.match(r"(\d+)\.(\d+)", getattr(st, "__version__", "0.0"))
+    return (int(m[1]), int(m[2])) if m else (0, 0)
+
+
+# Newer Streamlit replaced use_container_width with width="stretch"; pick whichever this version expects.
+STRETCH = {"width": "stretch"} if _version() >= (1, 50) else {"use_container_width": True}
+
 PALETTES = {
-    "light": dict(
-        bg="#f6f8fb", card="#ffffff", line="#e2e8f0", text="#0f1e3d", muted="#475569",
-        accent="#1d4ed8", accent2="#7c3aed", soft="#eff6ff", field="#ffffff",
-        shadow="rgba(15,30,61,.12)", teal="#0d9488",
-        ok_bg="#dcfce7", ok_bd="#16a34a", ok_tx="#14532d",
-        warn_bg="#fef3c7", warn_bd="#d97706", warn_tx="#78350f",
-        bad_bg="#fee2e2", bad_bd="#dc2626", bad_tx="#7f1d1d",
-        grey_bg="#f1f5f9", grey_bd="#94a3b8", grey_tx="#475569",
-        hero_grad="linear-gradient(135deg, #dbeafe 0%, #ede9fe 60%, #ffffff 100%)",
-        card_top_match="#16a34a", card_top_nomatch="#f59e0b", card_top_time="#0d9488", card_top_total="#1d4ed8",
-        toggle_sun="#f59e0b", toggle_moon="#1d4ed8",
-    ),
-    "dark": dict(
-        bg="#0b1220", card="#111c33", line="#223356", text="#e6edf7", muted="#9fb0c9",
-        accent="#60a5fa", accent2="#a78bfa", soft="#12213f", field="#0f192e",
-        shadow="rgba(0,0,0,.5)", teal="#2dd4bf",
-        ok_bg="#0f2a1d", ok_bd="#22c55e", ok_tx="#bbf7d0",
-        warn_bg="#2e2410", warn_bd="#f59e0b", warn_tx="#fde68a",
-        bad_bg="#2f1416", bad_bd="#f87171", bad_tx="#fecaca",
-        grey_bg="#18233d", grey_bd="#64748b", grey_tx="#cbd5e1",
-        hero_grad="linear-gradient(135deg, #12213f 0%, #1a1645 60%, #111c33 100%)",
-        card_top_match="#22c55e", card_top_nomatch="#f59e0b", card_top_time="#2dd4bf", card_top_total="#60a5fa",
-        toggle_sun="#f59e0b", toggle_moon="#60a5fa",
-    ),
+    "light": dict(bg="#f4f6fb", card="#ffffff", line="#e3e8f2", text="#0e1730", muted="#5b6784", accent="#4f46e5", accent2="#06b6d4", soft="#eef0ff",
+                  field="#ffffff", shadow="rgba(30,41,90,.13)", teal="#0891b2", radar="37,99,235", radar_a=".16", grid="rgba(79,70,229,.07)", ok_bg="#dcfce7", ok_bd="#16a34a", ok_tx="#14532d", warn_bg="#fef3c7",
+                  warn_bd="#d97706", warn_tx="#78350f", bad_bg="#fee2e2", bad_bd="#dc2626", bad_tx="#7f1d1d", grey_bg="#f1f5f9", grey_bd="#94a3b8", grey_tx="#475569"),
+    "dark": dict(bg="#080d1c", card="#0f1730", line="#1f2a4d", text="#e8ecf8", muted="#93a0c4", accent="#818cf8", accent2="#22d3ee", soft="#141d3c",
+                 field="#0c1329", shadow="rgba(0,0,0,.55)", teal="#22d3ee", radar="34,211,238", radar_a=".22", grid="rgba(129,140,248,.09)", ok_bg="#0f2a1d", ok_bd="#22c55e", ok_tx="#bbf7d0", warn_bg="#2e2410",
+                 warn_bd="#f59e0b", warn_tx="#fde68a", bad_bg="#2f1416", bad_bd="#f87171", bad_tx="#fecaca", grey_bg="#18233d", grey_bd="#64748b", grey_tx="#cbd5e1"),
 }
 
 
 def palette() -> dict:
-    """Return the active palette (dark or light) based on session state."""
     return PALETTES["dark" if st.session_state.get("dark") else "light"]
 
 
 def theme_css() -> str:
-    """Render the palette as a :root{...} CSS rule, refreshed on every script run."""
     return ":root{" + ";".join(f"--{k.replace('_', '-')}:{v}" for k, v in palette().items()) + "}"
 
 
-def html_table(rows, raw=()):
-    """Theme-aware HTML table (st.dataframe cannot follow our dark mode)."""
-    if not rows:
-        return
-    cols = list(rows[0])
-    head = "".join(f"<th>{esc(c)}</th>" for c in cols)
-    body = "".join("<tr>" + "".join(f"<td>{r[c] if c in raw else esc(r[c])}</td>" for c in cols) + "</tr>" for r in rows)
-    st.markdown(f'<div class="tv-tablewrap"><table class="tv-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
-
-
-_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+def logo_svg(size: int = 44, uid: str = "a") -> str:
+    return (f'<svg width="{size}" height="{size}" viewBox="0 0 48 48" role="img" aria-label="{APP_NAME} logo"><defs><linearGradient id="lg{uid}" x1="0" y1="0" x2="1" y2="1">'
+            '<stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>'
+            f'<rect width="48" height="48" rx="13" fill="url(#lg{uid})"/>'
+            '<path d="M24 8c-6.6 0-12 5.2-12 11.7 0 8.2 12 18.3 12 18.3s12-10.1 12-18.3C36 13.2 30.6 8 24 8z" fill="none" stroke="#fff" stroke-width="2.6"/>'
+            '<circle cx="24" cy="20" r="5.2" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="24" cy="20" r="1.9" fill="#fff"/>'
+            '<path d="M9 42h9M30 42h9" stroke="#fff" stroke-opacity=".75" stroke-width="2.4" stroke-linecap="round"/></svg>')
 
 
 def esc(x) -> str:
     return html.escape("" if x is None else str(x))
+
+
+def case_badges(result) -> str:
+    frames = result.vision.frames
+    used = sum(1 for f in frames if f.used)
+    skipped = len(frames) - used
+    out = (f'<span class="tv-badge" title="Run folder name">Case ID <b>{esc(result.run_id)}</b></span>'
+           f'<span class="tv-badge" title="Frames captured as evidence">Evidence Count <b>{len(frames)}</b></span>'
+           f'<span class="tv-badge tv-badge-ok">{used} used</span>')
+    if skipped:
+        out += f'<span class="tv-badge tv-badge-warn">{skipped} skipped</span>'
+    return f'<div class="tv-badges">{out}</div>'
+
+
+def html_table(rows, raw=()):
+    """Theme-aware table. A row may carry "_cls" (a CSS class for the row). Cells are escaped unless the column is in raw."""
+    if not rows:
+        return
+    cols = [c for c in rows[0] if c != "_cls"]
+    head = "".join(f"<th>{esc(c)}</th>" for c in cols)
+    body = "".join(f'<tr class="{esc(r.get("_cls", ""))}">' + "".join(f"<td>{r[c] if c in raw else esc(r[c])}</td>" for c in cols) + "</tr>" for r in rows)
+    st.markdown(f'<div class="tv-tablewrap"><table class="tv-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
+
+
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 def safe_hex(value, default="#cbd5e1") -> str:
@@ -85,7 +105,7 @@ def safe_name(text: str) -> str:
 
 
 def resolve_image(run_dir, rel):
-    """Find an image path relative to the run folder. Returns a Path or None. Never escapes the run folder."""
+    """Find an image path (relative to the run folder). Returns a Path or None. Never leaves the run folder."""
     if not rel:
         return None
     base = Path(run_dir).resolve()
@@ -93,7 +113,7 @@ def resolve_image(run_dir, rel):
     p = (base / rel).resolve()
     if base in p.parents:
         options.append(p)
-    options.append(MOCK_DIR / "sample_images" / base.name / Path(rel).name)  # demo images per run
+    options.append(MOCK_DIR / "sample_images" / base.name / Path(rel).name)  # optional demo images, per run
     options.append(MOCK_DIR / "sample_images" / Path(rel).name)
     return next((o for o in options if o.is_file()), None)
 
@@ -119,7 +139,7 @@ def show_image(run_dir, rel, caption=None) -> bool:
     if arr is None:
         st.markdown('<div class="tv-ph">Image not available</div>', unsafe_allow_html=True)
         return False
-    st.image(arr, caption=caption, use_container_width=True)
+    st.image(arr, caption=caption, **STRETCH)
     return True
 
 
@@ -137,11 +157,7 @@ def set_result(result: AnalysisResult, source: str) -> None:
     except OSError:
         pass
     st.session_state.update(result=result, source=source, run_dir=str(run_dir))
-    # Per-session tally shown on the animated stat cards.
-    st.session_state.setdefault("history", {})[result.run_id] = {
-        "status": result.verdict.status,
-        "time": sum(result.timings_s.values()),
-    }
+    st.session_state.setdefault("history", {})[result.run_id] = {"status": result.verdict.status, "time": sum(result.timings_s.values())}
 
 
 def clear_result() -> None:

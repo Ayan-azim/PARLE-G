@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>TraceVision report {{ r.run_id }}</title>
+<html lang="en"><head><meta charset="utf-8"><title>{{ app_name }} report {{ r.run_id }}</title>
 <style>
 @page { size: A4; margin: 1.6cm; }
 body { font-family: Helvetica, Arial, sans-serif; color: #0f1e3d; font-size: 10pt; }
@@ -11,70 +11,71 @@ th { background: #eef2f7; text-align: left; } td, th { border: 1px solid #cbd5e1
 </style></head><body>
 {% macro cand(c, label) %}
 <h3>{{ label }} #{{ c.rank }}: {{ c.plate }} ({{ c.confidence|pct }} confidence)</h3>
-{% if show_registry %}<table><tr><th>Make / model</th><td>{{ c.make or '-' }} {{ c.model or '' }}</td><th>Registry colour</th><td>{{ c.registry_colour }}</td><th>Registry type</th><td>{{ c.registry_type }}</td></tr></table>{% endif %}
+{% if show_details %}<table><tr><th>Make / model</th><td>{{ c.make or '-' }} {{ c.model or '' }}</td><th>Registry colour</th><td>{{ c.registry_colour }}</td><th>Registry type</th><td>{{ c.registry_type }}</td></tr></table>{% endif %}
 <table><tr><th>Plate</th><th>Colour</th><th>Type</th><th>Final</th><th>Evidence factor</th><th>Margin factor</th></tr>
 <tr><td>{{ '%.3f'|format(c.breakdown.plate_score) }}</td><td>{{ '%.3f'|format(c.breakdown.colour_score) }}</td><td>{{ '%.3f'|format(c.breakdown.type_score) }}</td><td>{{ '%.3f'|format(c.breakdown.final_score) }}</td><td>{{ '%.3f'|format(c.breakdown.evidence_factor) }}</td><td>{{ '%.3f'|format(c.breakdown.margin_factor) }}</td></tr></table>
 <table><tr><th>Position</th>{% for m in c.char_matches %}<td align="center">{{ m.position }}</td>{% endfor %}</tr>
 <tr><th>Observed</th>{% for m in c.char_matches %}<td align="center" bgcolor="{{ match_bg(m.status) }}"><b>{{ m.observed }}</b></td>{% endfor %}</tr>
 <tr><th>Registry</th>{% for m in c.char_matches %}<td align="center" bgcolor="{{ match_bg(m.status) }}"><b>{{ m.registry }}</b></td>{% endfor %}</tr>
 <tr><th>Status</th>{% for m in c.char_matches %}<td align="center">{{ m.status[:4] }}</td>{% endfor %}</tr></table>
-<ul>{% for x in c.reasons %}<li>{{ x }}</li>{% endfor %}</ul>
+<ul>{% for x in c.reasons|visible %}<li>{{ x }}</li>{% endfor %}</ul>
 {% endmacro %}
 
-<h1>TraceVision</h1><div class="note">AI-Powered Vehicle Identification &amp; Traceability: investigation report</div>
+<h1>{{ app_name }}</h1><div class="note">AI-Powered Vehicle Identification &amp; Traceability: investigation report</div>
 
-<h2>1. Case header</h2>
-<table><tr><th>Run ID</th><td>{{ r.run_id }}</td><th>Created</th><td>{{ r.created_at }}</td></tr>
+<h2>Case header</h2>
+<table><tr><th>Case ID</th><td>{{ r.run_id }}</td><th>Created</th><td>{{ r.created_at }}</td></tr>
 <tr><th>Clip</th><td>{{ r.vision.clip_name }}</td><th>Data source</th><td>{{ source }}</td></tr>
 <tr><th>Duration</th><td>{{ r.vision.duration_s }} s at {{ r.vision.fps }} fps</td><th>Frame size</th><td>{{ r.vision.frame_size[0] }} x {{ r.vision.frame_size[1] }}</td></tr>
-<tr><th>Target vehicle</th><td>{{ r.vision.vehicle_class }}, track {{ r.vision.track_id }}</td><th>Chosen because</th><td>{{ r.vision.target_selection_reason }}</td></tr></table>
+<tr><th>Evidence count</th><td>{{ r.vision.frames|length }} frames ({{ r.vision.frames|selectattr("used")|list|length }} used)</td></tr>
+<tr><th>Target track</th><td>{{ r.vision.track_id }}</td><th>Chosen because</th><td>{{ r.vision.target_selection_reason }}</td></tr></table>
 {% if images.get(r.vision.vehicle_crop_path) %}<img src="{{ images[r.vision.vehicle_crop_path] }}" width="220"/>{% endif %}
 
-<h2>2. Settings and investigator hints</h2>
+<h2>Settings and investigator hints</h2>
 <table><tr><th>Sample fps</th><th>Min sharpness</th><th>Min support</th><th>Min share</th><th>Min known chars</th><th>No-match threshold</th><th>Min margin</th><th>Weights (plate/colour/type)</th></tr>
 <tr><td>{{ r.settings.sample_fps }}</td><td>{{ r.settings.min_frame_sharpness }}</td><td>{{ r.settings.min_support }}</td><td>{{ r.settings.min_share }}</td><td>{{ r.settings.min_known_chars }}</td><td>{{ r.settings.no_match_threshold }}</td><td>{{ r.settings.min_margin }}</td><td>{{ r.settings.weight_plate }} / {{ r.settings.weight_colour }} / {{ r.settings.weight_type }}</td></tr></table>
 <table><tr><th>Partial plate hint</th><td>{{ r.hints.partial_plate or 'none' }}</td><th>Colour hint</th><td>{{ r.hints.colour or 'none' }}</td><th>Type hint</th><td>{{ r.hints.body_type or 'none' }}</td></tr></table>
 
-<h2>3. Fused plate</h2>
+<h2>Fused plate</h2>
 <table><tr>{% for ch in r.fusion.chars %}<td align="center" bgcolor="{{ fused_bg(ch) }}"><b>{{ ch.char }}</b><br/>{{ '%.0f'|format(ch.confidence * 100) }}%</td>{% endfor %}</tr></table>
 <div class="note">Pattern {{ r.fusion.pattern }}: {{ r.fusion.known_count }} of {{ r.fusion.length }} characters known. Unknown characters are shown as ? and are never guessed. {{ r.fusion.format_note or '' }}</div>
 
-<h2>4. Vehicle attributes</h2>
+{% if show_details %}<h2>Vehicle attributes</h2>
 <table><tr><th>Colour</th><td><span style="background-color: {{ safe_hex(r.attributes.colour.hex) }};">&nbsp;&nbsp;&nbsp;&nbsp;</span> {{ r.attributes.colour.value }} ({{ r.attributes.colour.confidence|pct }}); alternatives: {% for a in r.attributes.colour.alternatives %}{{ a.value }} {{ a.confidence|pct }} {% else %}none{% endfor %}</td></tr>
 <tr><th>Body type</th><td>{{ r.attributes.body_type.value }} ({{ r.attributes.body_type.confidence|pct }}); alternatives: {% for a in r.attributes.body_type.alternatives %}{{ a.value }} {{ a.confidence|pct }} {% else %}none{% endfor %}</td></tr>
-<tr><th>Make / model</th><td>{% if r.attributes.make_model %}{{ r.attributes.make_model.value }} ({{ r.attributes.make_model.confidence|pct }}){% else %}not estimated{% endif %}</td></tr></table>
+<tr><th>Make / model</th><td>{% if r.attributes.make_model %}{{ r.attributes.make_model.value }} ({{ r.attributes.make_model.confidence|pct }}){% else %}not estimated{% endif %}</td></tr></table>{% endif %}
 
-<h2>5. Match verdict</h2>
+<h2>Match verdict</h2>
 <div class="box"><b>{{ 'Possible match' if r.verdict.status == 'match' else 'No confident match' }}</b><br/><b>{{ r.verdict.headline }}</b><br/>{{ r.verdict.reason }}</div>
 
-<h2>6. Frames used and skipped</h2>
+<h2>Frames used and skipped</h2>
 <table><tr><th>Frame</th><th>Time (s)</th><th>Sharpness</th><th>Weight</th><th>Status</th><th>Reason</th><th>Plate crop</th></tr>
 {% for f in r.vision.frames %}<tr><td>{{ f.frame_idx }}</td><td>{{ f.timestamp_s }}</td><td>{{ f.sharpness }}</td><td>{{ f.quality_weight }}</td><td>{{ 'Used' if f.used else 'Skipped' }}</td><td>{{ f.skip_reason or '' }}</td><td>{% if images.get(f.plate_crop_path) %}<img src="{{ images[f.plate_crop_path] }}" width="90"/>{% else %}not available{% endif %}</td></tr>{% endfor %}</table>
 
-<h2>7. Per-frame readings</h2>
+<h2>Per-frame readings</h2>
 <table><tr><th>Frame</th><th>Raw text</th><th>Character confidences</th></tr>
 {% for f in r.vision.frames %}<tr><td>{{ f.frame_idx }}</td><td>{{ f.raw_text }}</td><td>{% for c in f.chars %}{{ c.char }}:{{ '%.2f'|format(c.conf) }} {% endfor %}</td></tr>{% endfor %}</table>
 
-<h2>8. Fusion votes</h2>
+<h2>Fusion votes</h2>
 <table><tr><th>Pos</th><th>Result</th><th>Status</th><th>Support</th><th>Share</th><th>Vote tally</th></tr>
 {% for ch in r.fusion.chars %}<tr><td>{{ ch.position }}</td><td><b>{{ ch.char }}</b></td><td>{{ ch.status }}</td><td>{{ '%.3f'|format(ch.confidence) }}</td><td>{{ '%.2f'|format(ch.share) }}</td><td>{% for k, v in ch.votes.items() %}{{ k }} {{ '%.3f'|format(v) }}; {% endfor %}</td></tr>{% endfor %}</table>
 
-<h2>9. Ranked candidates</h2>
+<h2>Ranked candidates</h2>
 {% if r.verdict.status == 'match' %}{% for c in r.candidates %}{{ cand(c, 'Candidate') }}{% else %}<p>No candidates were returned.</p>{% endfor %}
 {% else %}<p>No candidate is presented as a match because the verdict is "no confident match".</p>{% endif %}
 
-{% if r.weak_leads %}<h2>10. Weak leads (not matches)</h2>
+{% if r.weak_leads %}<h2>Weak leads (not matches)</h2>
 <p class="note">These entries only loosely fit the few readable characters. They are not confirmed matches.</p>
 {% for c in r.weak_leads %}{{ cand(c, 'Weak lead') }}{% endfor %}{% endif %}
 
-<h2>11. Rule checks</h2>
+<h2>Rule checks</h2>
 <table><tr><th>Rule</th><th>Result</th><th>Explanation</th></tr>
 {% for c in r.verdict.rule_checks %}<tr><td>{{ c.name }}</td><td bgcolor="{{ '#dcfce7' if c.passed else '#fee2e2' }}">{{ 'Passed' if c.passed else 'Failed' }}</td><td>{{ c.detail }}</td></tr>{% endfor %}</table>
 
-<h2>12. Warnings</h2>
+<h2>Warnings</h2>
 {% if r.warnings %}<ul>{% for w in r.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% else %}<p>No warnings.</p>{% endif %}
 
-<h2>13. Limitations and human verification</h2>
+<h2>Limitations and human verification</h2>
 <ul><li>This report is an investigative lead, not confirmation of identity. Every result must be verified by a human investigator against the original footage.</li>
 <li>Plate characters can be misread, especially in low-resolution or blurred footage. Unreadable characters are left as ?.</li>
 <li>Confidence scores describe how well evidence agrees with a registry entry. They are not the probability that the vehicle is correct.</li>
