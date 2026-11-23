@@ -94,7 +94,10 @@ def _confidences(finals: List[float], known: int, length: int):
     if not finals:
         return ev, [], 0.0
     gap = finals[0] - finals[1] if len(finals) > 1 else finals[0]
-    margins = [min(1.0, gap / 0.15)] + [max(0.0, 1.0 - (finals[0] - f) / 0.40) for f in finals[1:]]
+    lead = min(1.0, gap / 0.15)
+    # runner-ups inherit the leader's margin factor, scaled by how far behind they are, so a
+    # lower-ranked candidate can never show higher confidence than the one above it
+    margins = [lead] + [lead * max(0.0, 1.0 - (finals[0] - f) / 0.40) for f in finals[1:]]
     return min(1.0, ev), margins, gap
 
 
@@ -133,17 +136,17 @@ def match(fused: FusedPlate, attributes: Attributes, registry: List[RegistryEntr
         RuleCheck(name="best score threshold", passed=best >= settings.no_match_threshold,
                   detail=f"best final score {best:.0%} (need >= {settings.no_match_threshold:.0%})"),
         RuleCheck(name="margin over runner-up", passed=bool(finals) and gap >= settings.min_margin,
-                  detail=f"gap to second {gap:.0%} (need >= {settings.min_margin:.0%})"),
+                  detail=f"gap to second {gap:.1%} (need >= {settings.min_margin:.1%})"),
     ]
     if all(c.passed for c in checks):
         conf = cands[0].confidence
         verdict = Verdict(status="match", headline=f"Top match: {round(conf * 100)}% confidence",
                           top_confidence=conf, rule_checks=checks,
-                          reason=f"{cands[0].plate} scored {best:.0%} and leads the runner-up by {gap:.0%}; "
+                          reason=f"{cands[0].plate} scored {best:.0%} and leads the runner-up by {gap:.1%}; "
                                  f"{fused.known_count} of {fused.length} plate characters readable.")
         return verdict, cands, []
     failed = [c.detail for c in checks if not c.passed]
-    reason = f"Only {fused.known_count} of {fused.length} plate characters readable; best candidate scored {best:.0%}"
+    reason = f"{fused.known_count} of {fused.length} plate characters readable; best candidate scored {best:.0%}"
     if failed:
         reason += ". Failed: " + "; ".join(failed)
     verdict = Verdict(status="no_confident_match", headline="No confident match", top_confidence=None,

@@ -54,7 +54,7 @@ def sidebar():
         if sig and count is not None and st.session_state.get("reg_sig") != sig:
             st.session_state.reg_sig = sig
             st.toast(f"Registry loaded: {count} entries", icon="✅")
-        st.metric("Registry entries", count if count is not None else "-")
+        # st.metric("Registry entries", count if count is not None else "-")
         if count is None:
             st.caption("No registry loaded. It is not needed in mock mode.")
         st.divider()

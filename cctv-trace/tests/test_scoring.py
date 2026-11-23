@@ -40,3 +40,12 @@ def test_near_duplicates_give_low_margin():
 def test_different_length_registry_plate_still_scores():
     ps, cm, _ = compare_plate(fused("CG04AB1234"), "CG04AB123")
     assert 0.0 < ps < 1.0
+
+
+def test_runner_up_never_more_confident_than_leader():
+    confs = [0.9] * 8 + [0.6] + [0.9]           # one weakly-read digit separates the near-duplicates
+    f = fuse_plate([frame("CG04AB1234", confs, idx=i, n_frames=3) for i in range(3)], S)
+    reg = [entry("CG04AB1234"), entry("CG04AB1284")]
+    v, cands, weak = match(f, attrs(), reg, S)
+    c = [x.confidence for x in (cands or weak)]
+    assert c == sorted(c, reverse=True)
