@@ -1,0 +1,2 @@
+# Shared app and model dependencies are maintained in backend/requirements.txt.
+# From the workspace root: pip install -r backend/requirements.txt

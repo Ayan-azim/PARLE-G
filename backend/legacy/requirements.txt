@@ -1,0 +1,28 @@
+# Python 3.11 (3.10 also works; 3.12 can break some CV packages)
+
+# --- shared ---
+numpy
+pandas>=2.1
+pillow>=10.0
+pydantic>=2.0
+opencv-python-headless      # keep exactly ONE opencv package in the whole repo
+
+# --- Person C: app and report ---
+streamlit>=1.37
+plotly>=5.22
+jinja2>=3.1
+xhtml2pdf>=0.2.16
+
+# --- Person A: vision ---
+ultralytics>=8.2
+fast-plate-ocr>=1.1.0
+easyocr
+# torch and torchvision arrive through ultralytics and easyocr (CPU build is fine)
+
+# --- Person B: matching and attributes ---
+scikit-learn                # k-means for colour (matching/attributes.py)
+scikit-image                # Lab colour conversion (matching/attributes.py)
+matplotlib                  # tuning plots
+
+# --- dev ---
+pytest

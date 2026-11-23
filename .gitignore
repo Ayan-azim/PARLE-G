@@ -1,0 +1,83 @@
+# Python environments
+**/.venv/
+**/venv/
+**/env/
+**/ENV/
+
+# Python bytecode and caches
+**/__pycache__/
+*.py[cod]
+*$py.class
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.hypothesis/
+**/.nox/
+**/.tox/
+**/.cache/
+**/.ipynb_checkpoints/
+
+# Test and coverage output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+pytestdebug.log
+
+# Build and packaging output
+build/
+dist/
+site/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+**/.streamlit/secrets.toml
+
+# Local IDE and operating-system files
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+*.swp
+*.swo
+*~
+
+# Streamlit and generated run output
+**/.streamlit/cache/
+**/runs/
+**/app/report/output/
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Large local video inputs and generated recordings.
+# Keep curated videos out of Git unless they are deliberately added with Git LFS.
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Model checkpoints and exported weights; keep the two active detector weights.
+*.pt
+*.pth
+*.onnx
+*.weights
+*.ckpt
+!models/weights/yolo11s.pt
+!models/weights/indian_plate_best.pt
+
+# Old smoke-test images and duplicate archive bundles
+backend/legacy/smoke_plate_*.jpg
+backend/legacy/*.zip

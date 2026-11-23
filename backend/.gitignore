@@ -1,0 +1,73 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+**/.venv/
+**/venv/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# IDE and OS files
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Project-generated files and large local assets
+**/runs/
+legacy/data/clips/*
+!legacy/data/clips/.gitkeep
+legacy/models/*
+!legacy/models/.gitkeep
+legacy/models/easyocr/
+*.pt
+*.pth
+*.onnx
+*.weights
+*.ckpt
+legacy/app/report/output/
+*.log
+
+# Extra safety (weights, videos, smoke-test output)
+*.pt
+*.onnx
+*.mp4
+*.avi
+*.mov
+smoke_plate_*.jpg
+
+# Streamlit cache
+.streamlit/cache/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Editor swap and backup files
+*.swp
+*.swo
+*~
+
+# Additional OS files
+Desktop.ini
