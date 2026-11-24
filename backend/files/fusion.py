@@ -2,12 +2,13 @@
 
 Real OCR output varies in length per frame and may carry junk (e.g. the "IND" strip), so we
 cannot vote by raw index. Steps:
-  1. clean each reading: strip a leading "IND", trim to the longest span that fits the Indian
-     plate regex (state 2 letters, RTO 1-2 digits, series 0-3 letters, number 4 digits);
-  2. pick a reference reading (weighted medoid by edit distance, preferring regex-valid ones);
-  3. align every reading to the reference (confusable-aware edit distance); grossly different
+1. clean each reading: strip a leading "IND", trim to the longest span that fits the Indian
+     plate regex (state 2 letters, RTO 1-2 digits, series 0-3 letters with OCR digit-confusables,
+     number 4 digits);
+2. pick a reference reading (weighted medoid by edit distance, preferring regex-valid ones);
+3. align every reading to the reference (confusable-aware edit distance); grossly different
      readings are rejected; characters inserted relative to the reference are dropped;
-  4. vote per reference column: votes[c] += weight * conf (weights renormalised to sum to 1).
+4. vote per reference column: votes[c] += weight * conf (weights renormalised to sum to 1).
 A column is KNOWN only if support >= min_support AND share >= min_share, else "?".
 A frame that has no character for a column adds no votes, so support honestly drops.
 The plate format is only a soft prior when choosing between competing candidates.
@@ -24,6 +25,13 @@ from matching.align import align
 
 PLATE_RE = re.compile(r"[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{4}")
 PLATE_PARTS = re.compile(r"([A-Z]{2})(\d{1,2})([A-Z]{0,3})(\d{4})")
+
+# Confusable-aware Indian plate patterns (e.g. GB read as G8) capped at 10 chars so
+# the final digit is not wrongly trimmed off as "junk".
+PLATE_RE_CONF = re.compile(r"[A-Z]{2}(?:\d{2}[A-Z012568]{0,2}|\d{1}[A-Z012568]{0,3})\d{4}")
+PLATE_PARTS_2RTO = re.compile(r"([A-Z]{2})(\d{2})([A-Z012568]{0,2})(\d{4})")
+PLATE_PARTS_1RTO = re.compile(r"([A-Z]{2})(\d{1})([A-Z012568]{0,3})(\d{4})")
+
 MIN_TRIM_LEN = 8
 REJECT_DISTANCE = 0.5          # normalised edit distance above which a frame is rejected
 INVALID_CLASS_PENALTY = 0.6
@@ -44,7 +52,11 @@ def _prepare(f: FrameReading, weight: float) -> _Reading:
     trimmed = False
     if text.startswith("IND") and len(text) - 3 >= MIN_TRIM_LEN:
         chars, text, trimmed = chars[3:], text[3:], True
-    spans = [m for m in PLATE_RE.finditer(text) if m.end() - m.start() >= MIN_TRIM_LEN]
+
+    # Prefer a full confusable-aware span (up to 10 chars) before falling back to strict regex
+    spans = [m for m in PLATE_RE_CONF.finditer(text) if m.end() - m.start() >= MIN_TRIM_LEN]
+    if not spans:
+        spans = [m for m in PLATE_RE.finditer(text) if m.end() - m.start() >= MIN_TRIM_LEN]
     if spans:
         m = max(spans, key=lambda m: m.end() - m.start())
         if (m.start(), m.end()) != (0, len(text)):
@@ -53,10 +65,11 @@ def _prepare(f: FrameReading, weight: float) -> _Reading:
 
 
 def _classes(ref_text: str) -> Optional[str]:
-    m = PLATE_PARTS.fullmatch(ref_text)
-    if not m:
-        return None
-    return "L" * len(m[1]) + "D" * len(m[2]) + "L" * len(m[3]) + "D" * len(m[4])
+    for pat in (PLATE_PARTS, PLATE_PARTS_2RTO, PLATE_PARTS_1RTO):
+        m = pat.fullmatch(ref_text)
+        if m:
+            return "L" * len(m[1]) + "D" * len(m[2]) + "L" * len(m[3]) + "D" * len(m[4])
+    return None
 
 
 def _valid(ch: str, cls: Optional[str]) -> bool:
@@ -80,8 +93,14 @@ def fuse_plate(frames: List[FrameReading], settings: Settings,
         cost, _ = align(a.text, b.text)
         return cost / max(len(a.text), len(b.text), 1)
 
-    pool = [r for r in rs if PLATE_RE.fullmatch(r.text)] or rs
-    ref = min(pool, key=lambda c: sum(o.weight * dist(c, o) for o in rs))
+    pool = [r for r in rs if PLATE_RE.fullmatch(r.text) or PLATE_RE_CONF.fullmatch(r.text)] or rs
+    ref = min(
+        pool,
+        key=lambda c: (
+            round(sum(o.weight * dist(c, o) for o in rs), 6),
+            0 if PLATE_RE.fullmatch(c.text) else 1,
+        ),
+    )
 
     kept = []
     rejected = 0

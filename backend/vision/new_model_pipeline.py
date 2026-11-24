@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,26 @@ from schema import CharReading, FrameReading, Settings, VisionOutput
 ROOT = Path(__file__).resolve().parents[2]
 MODELS = ROOT / "models"
 PIPELINE = MODELS / "scripts" / "run_vision_pipeline.py"
+
+
+def _frame_quality_score(chars: list[CharReading], sharpness: float, plate_box) -> float:
+    """Score a usable frame so crisp, high-confidence, full plates outweigh blurry/noisy ones."""
+    if not chars:
+        return 0.0
+    mean_conf = sum(c.conf for c in chars) / len(chars)
+    # Strongly separate clear reads (0.95^3 = 0.86) from blurry guesses (0.50^3 = 0.13)
+    conf_factor = max(0.05, mean_conf) ** 3
+    # Full 9-10 char plates outrank partial blurry fragments
+    len_factor = (min(len(chars), 10) / 10.0) ** 1.5
+    # Cap sharpness at 400 so noisy/high-contrast blurry borders cannot outscore clean plates
+    sharp_factor = 0.5 + 0.5 * (min(max(0.0, sharpness), 400.0) / 400.0)
+    # Larger plate crops (closer vehicle) carry more pixel detail
+    area_factor = 1.0
+    if plate_box and len(plate_box) == 4:
+        bw = max(1.0, float(plate_box[2]) - float(plate_box[0]))
+        bh = max(1.0, float(plate_box[3]) - float(plate_box[1]))
+        area_factor = min(2.0, max(0.35, math.sqrt(bw * bh) / 60.0))
+    return conf_factor * len_factor * sharp_factor * area_factor
 
 
 def run_vision_batch(video_path: str, settings: Settings, run_dir: str) -> list[VisionOutput]:
@@ -45,13 +66,38 @@ def run_vision_batch(video_path: str, settings: Settings, run_dir: str) -> list[
     for vehicle in tracks:
         track_id = int(vehicle["track_id"])
         read_items = vehicle.get("frame_reads", [])
-        sharp_total = sum(max(0.0, float(r.get("sharpness", 0))) for r in read_items)
-        frames = []
+
+        # First pass: parse chars, usability, and readability score for each frame
+        prepared = []
         for read in read_items:
             raw = str(read.get("raw_text") or "").upper()
             probs = read.get("char_probs") or []
-            chars = [CharReading(char=ch, conf=max(0.0, min(1.0, float(probs[i])) if i < len(probs) else 0.5))
-                     for i, ch in enumerate(raw) if ch.isalnum()]
+            chars = [
+                CharReading(
+                    char=ch,
+                    conf=max(0.0, min(1.0, float(probs[i])) if i < len(probs) else 0.5),
+                )
+                for i, ch in enumerate(raw) if ch.isalnum()
+            ]
+            sharpness = round(max(0.0, float(read.get("sharpness", 0))), 2)
+            frame_box = read.get("plate_bbox")
+            used = bool(chars) and bool(read.get("used", True))
+            skip_reason = None
+            if not used:
+                skip_reason = (
+                    str(read.get("skip_reason"))
+                    if read.get("skip_reason")
+                    else "OCR returned no readable characters"
+                )
+            score = _frame_quality_score(chars, sharpness, frame_box) if used else 0.0
+            prepared.append((read, chars, sharpness, frame_box, used, skip_reason, score))
+
+        score_total = sum(item[6] for item in prepared)
+        frames = []
+        best_vehicle_source = None
+        best_vehicle_score = -1.0
+
+        for read, chars, sharpness, frame_box, used, skip_reason, score in prepared:
             frame_idx = int(read.get("frame", 0))
             source_image = Path(str(read.get("image_path") or ""))
             if not source_image.is_absolute():
@@ -63,27 +109,34 @@ def run_vision_batch(video_path: str, settings: Settings, run_dir: str) -> list[
                 if source_image.resolve() != dest.resolve():
                     shutil.copy2(source_image, dest)
                 rel_image = dest.resolve().relative_to(Path(run_dir).resolve()).as_posix()
-            sharpness = max(0.0, float(read.get("sharpness", 0)))
-            frame_box = read.get("plate_bbox")
+
+            norm_weight = round(score / score_total, 4) if (used and score_total > 0) else 0.0
+            norm_weight = min(1.0, max(0.0, norm_weight))
+
             frames.append(FrameReading(
-                frame_idx=frame_idx, timestamp_s=frame_idx / fps, sharpness=sharpness,
-                quality_weight=sharpness / sharp_total if sharp_total else 0.0,
-                used=bool(chars), skip_reason=None if chars else "OCR returned no readable characters",
+                frame_idx=frame_idx, timestamp_s=round(frame_idx / fps, 2), sharpness=sharpness,
+                quality_weight=norm_weight,
+                used=used, skip_reason=skip_reason,
                 plate_box=tuple(map(float, frame_box)) if frame_box else None,
                 plate_crop_path=rel_image, raw_text="".join(c.char for c in chars), chars=chars,
             ))
-        frames.sort(key=lambda f: f.frame_idx)
-        vehicle_crop_rel = None
-        for read in read_items:
+
+            # Track the best-scoring frame's vehicle crop for a cleaner thumbnail
             source_vehicle = Path(str(read.get("vehicle_path") or ""))
             if not source_vehicle.is_absolute():
                 source_vehicle = (MODELS / source_vehicle).resolve()
-            if source_vehicle.is_file():
-                vehicle_dest = output_dir / "evidence" / f"track_{track_id}" / "vehicle.jpg"
-                vehicle_dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_vehicle, vehicle_dest)
-                vehicle_crop_rel = vehicle_dest.resolve().relative_to(Path(run_dir).resolve()).as_posix()
-                break
+            if source_vehicle.is_file() and score > best_vehicle_score:
+                best_vehicle_score = score
+                best_vehicle_source = source_vehicle
+
+        frames.sort(key=lambda f: f.frame_idx)
+        vehicle_crop_rel = None
+        if best_vehicle_source is not None:
+            vehicle_dest = output_dir / "evidence" / f"track_{track_id}" / "vehicle.jpg"
+            vehicle_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(best_vehicle_source, vehicle_dest)
+            vehicle_crop_rel = vehicle_dest.resolve().relative_to(Path(run_dir).resolve()).as_posix()
+
         colour = vehicle.get("colour") or {}
         vehicle_type = vehicle.get("type") or {}
         results.append(VisionOutput(

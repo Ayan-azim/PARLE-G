@@ -117,7 +117,8 @@ def render(result: AnalysisResult, run_dir: str, source: str, debug: bool):
         if c2.button("Prepare PDF report", **STRETCH):
             try:
                 with st.spinner("Building PDF..."):
-                    st.session_state[key] = build_pdf(html)
+                    pdf_html = build_html(result, run_dir, source, pdf_mode=True)
+                    st.session_state[key] = build_pdf(pdf_html)
                 st.toast("PDF report is ready to download", icon="✅")
             except ReportError as e:
                 st.error(f"PDF could not be created ({e}). The HTML report still works.")

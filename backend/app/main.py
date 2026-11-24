@@ -62,16 +62,7 @@ def sidebar():
         st.metric("Registry entries", count if count is not None else "-")
         if count is None:
             st.caption("No registry loaded. It is not needed in mock mode.")
-        st.divider()
-        fps = st.slider("Frame sampling rate (fps)", 1.0, 15.0, float(D.sample_fps), 0.5)
-        known = st.slider("Minimum known characters", 1, 10, int(D.min_known_chars))
-        thr = st.slider("No-match threshold", 0.0, 1.0, float(D.no_match_threshold), 0.01)
-        debug = st.toggle("Show debug view", value=False)
-        mock = st.toggle("Use mock data", value=True)
-        scenario = (
-            st.radio("Mock scenario", list(common.MOCK_FILES), disabled=not mock) if mock else list(common.MOCK_FILES)[0]
-        )
-    return Settings(sample_fps=fps, min_known_chars=known, no_match_threshold=thr), reg_path, debug, mock, scenario
+    return D, reg_path, False, False, list(common.MOCK_FILES)[0]
 
 
 settings, registry, debug, use_mock, scenario = sidebar()

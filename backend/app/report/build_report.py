@@ -27,8 +27,14 @@ def _uri(path: Path | None):
         return None
 
 
-def _env() -> Environment:
+def _env(pdf_mode: bool = False) -> Environment:
     env = Environment(loader=FileSystemLoader(Path(__file__).parent), autoescape=select_autoescape(["html"]))
+    if pdf_mode:
+        def format_pdf_float(value):
+            if isinstance(value, float):
+                return f"{value:.5f}".rstrip("0").rstrip(".")
+            return value
+        env.finalize = format_pdf_float
     env.filters["pct"] = lambda x: "n/a" if x is None else f"{x * 100:.0f}%"
     env.globals["fused_bg"] = lambda ch: GREY if ch.status != "known" else (GREEN if ch.confidence >= 0.8 else AMBER)
     env.globals["match_bg"] = lambda s: {"match": GREEN, "confusable": AMBER, "mismatch": RED}.get(s, GREY)
@@ -37,12 +43,12 @@ def _env() -> Environment:
     return env
 
 
-def build_html(result: AnalysisResult, run_dir: str, source: str = "") -> str:
+def build_html(result: AnalysisResult, run_dir: str, source: str = "", pdf_mode: bool = False) -> str:
     paths = [result.vision.vehicle_crop_path]
     for f in result.vision.frames:
         paths += [f.plate_crop_path, f.enhanced_crop_path]
     images = {p: u for p in paths if p and (u := _uri(resolve_image(run_dir, p)))}
-    return _env().get_template("template.html").render(r=result, images=images, source=source or "unspecified")
+    return _env(pdf_mode=pdf_mode).get_template("template.html").render(r=result, images=images, source=source or "unspecified")
 
 
 def build_pdf(html: str) -> bytes:
